@@ -3,8 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import re
 import time
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta
 
 # =====================================================
 # CONFIG
@@ -16,8 +15,6 @@ SCHEDULE_URL = f"{BASE_URL}/cricket-schedule/upcoming-series/all"
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
-
-IST = ZoneInfo("Asia/Kolkata")
 
 # =====================================================
 # HELPERS
@@ -39,42 +36,52 @@ def unique_list(items):
     return output
 
 
-def convert_to_ist(date_text, time_text):
+def extract_ist_time(time_text):
     """
-    Try converting Cricbuzz date/time to IST.
-    If parsing fails, return original values.
+    Example:
+    7:00 PM LOCAL, 2:00 PM GMT, 7:00 AM PT, 10:00 AM ET
+
+    Output:
+    07:30 PM
     """
 
-    raw = f"{date_text} {time_text}".strip()
+    try:
+        gmt_match = re.search(
+            r'(\d{1,2}:\d{2}\s*[APMapm]{2})\s*GMT',
+            time_text
+        )
+
+        if gmt_match:
+            gmt_time = gmt_match.group(1).upper().replace(" ", "")
+            dt = datetime.strptime(gmt_time, "%I:%M%p")
+            ist_dt = dt + timedelta(hours=5, minutes=30)
+            return ist_dt.strftime("%I:%M %p")
+
+    except:
+        pass
+
+    return time_text
+
+
+def format_ist_date(date_text):
+    """
+    Example:
+    Mon, 22 Jul 2025 -> 22-07-2025
+    """
 
     patterns = [
-        "%a, %d %b %Y %I:%M %p",
-        "%d %b %Y %I:%M %p",
-        "%a, %d %b %Y %H:%M",
-        "%d %b %Y %H:%M",
+        "%a, %d %b %Y",
+        "%d %b %Y"
     ]
 
     for fmt in patterns:
         try:
-            dt = datetime.strptime(raw, fmt)
-
-            # Assume Cricbuzz time already in IST
-            dt = dt.replace(tzinfo=IST)
-
-            return {
-                "date_ist": dt.strftime("%d-%m-%Y"),
-                "time_ist": dt.strftime("%I:%M %p"),
-                "day_ist": dt.strftime("%A")
-            }
-
+            dt = datetime.strptime(date_text.strip(), fmt)
+            return dt.strftime("%d-%m-%Y"), dt.strftime("%A")
         except:
             pass
 
-    return {
-        "date_ist": date_text,
-        "time_ist": time_text,
-        "day_ist": ""
-    }
+    return date_text, ""
 
 
 def get_html(url):
@@ -84,10 +91,10 @@ def get_html(url):
 
 
 # =====================================================
-# STEP 1: GET MATCH LINKS
+# STEP 1 - GET MATCH LINKS
 # =====================================================
 
-print("Opening Cricbuzz Schedule Page...")
+print("Opening Cricbuzz schedule page...")
 
 html = get_html(SCHEDULE_URL)
 soup = BeautifulSoup(html, "html.parser")
@@ -115,7 +122,7 @@ match_links = unique_list(match_links)
 print("Matches Found:", len(match_links))
 
 # =====================================================
-# STEP 2: SCRAPE MATCHES
+# STEP 2 - SCRAPE MATCHES
 # =====================================================
 
 results = []
@@ -156,9 +163,9 @@ for idx, (title, link) in enumerate(match_links, start=1):
             "source_url": facts_url
         }
 
-        # -------------------------------------------------
-        # KEY VALUE EXTRACTION
-        # -------------------------------------------------
+        # ---------------------------------------------
+        # Extract Data
+        # ---------------------------------------------
 
         for i in range(len(lines) - 1):
 
@@ -201,15 +208,12 @@ for idx, (title, link) in enumerate(match_links, start=1):
             elif key == "ends":
                 row["ends"] = val
 
-        # -------------------------------------------------
-        # CONVERT TO IST
-        # -------------------------------------------------
+        # ---------------------------------------------
+        # Convert to Indian Standard Time
+        # ---------------------------------------------
 
-        ist_data = convert_to_ist(row["date_raw"], row["time_raw"])
-
-        row["date_ist"] = ist_data["date_ist"]
-        row["time_ist"] = ist_data["time_ist"]
-        row["day_ist"] = ist_data["day_ist"]
+        row["time_ist"] = extract_ist_time(row["time_raw"])
+        row["date_ist"], row["day_ist"] = format_ist_date(row["date_raw"])
 
         results.append(row)
 
@@ -221,7 +225,7 @@ for idx, (title, link) in enumerate(match_links, start=1):
         print("Skipped:", title, str(e))
 
 # =====================================================
-# STEP 3: SORT BY IST DATE/TIME
+# STEP 3 - SORT MATCHES
 # =====================================================
 
 def sort_key(item):
@@ -237,7 +241,7 @@ def sort_key(item):
 results.sort(key=sort_key)
 
 # =====================================================
-# STEP 4: SAVE JSON
+# STEP 4 - SAVE JSON
 # =====================================================
 
 with open("matches.json", "w", encoding="utf-8") as f:
