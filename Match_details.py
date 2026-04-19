@@ -3,7 +3,8 @@ from bs4 import BeautifulSoup
 import json
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # =====================================================
 # CONFIG
@@ -16,6 +17,158 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
 
+IST = ZoneInfo("Asia/Kolkata")
+
+# =====================================================
+# GLOBAL COUNTRY / CITY TIMEZONES
+# Expanded coverage for cricket + general world locations
+# =====================================================
+
+COUNTRY_TIMEZONES = {
+    # South Asia
+    "india": "Asia/Kolkata",
+    "bangladesh": "Asia/Dhaka",
+    "pakistan": "Asia/Karachi",
+    "sri lanka": "Asia/Colombo",
+    "nepal": "Asia/Kathmandu",
+    "afghanistan": "Asia/Kabul",
+    "bhutan": "Asia/Thimphu",
+    "maldives": "Indian/Maldives",
+
+    # Middle East
+    "uae": "Asia/Dubai",
+    "dubai": "Asia/Dubai",
+    "abu dhabi": "Asia/Dubai",
+    "oman": "Asia/Muscat",
+    "qatar": "Asia/Qatar",
+    "saudi arabia": "Asia/Riyadh",
+    "kuwait": "Asia/Kuwait",
+    "bahrain": "Asia/Bahrain",
+    "jordan": "Asia/Amman",
+    "israel": "Asia/Jerusalem",
+    "iraq": "Asia/Baghdad",
+    "iran": "Asia/Tehran",
+
+    # Europe
+    "england": "Europe/London",
+    "london": "Europe/London",
+    "united kingdom": "Europe/London",
+    "scotland": "Europe/London",
+    "wales": "Europe/London",
+    "ireland": "Europe/Dublin",
+    "netherlands": "Europe/Amsterdam",
+    "amsterdam": "Europe/Amsterdam",
+    "germany": "Europe/Berlin",
+    "france": "Europe/Paris",
+    "spain": "Europe/Madrid",
+    "italy": "Europe/Rome",
+    "switzerland": "Europe/Zurich",
+    "belgium": "Europe/Brussels",
+    "portugal": "Europe/Lisbon",
+    "norway": "Europe/Oslo",
+    "sweden": "Europe/Stockholm",
+    "denmark": "Europe/Copenhagen",
+    "finland": "Europe/Helsinki",
+    "poland": "Europe/Warsaw",
+    "austria": "Europe/Vienna",
+    "greece": "Europe/Athens",
+    "turkey": "Europe/Istanbul",
+    "romania": "Europe/Bucharest",
+    "hungary": "Europe/Budapest",
+    "czech": "Europe/Prague",
+    "croatia": "Europe/Zagreb",
+    "serbia": "Europe/Belgrade",
+
+    # Africa
+    "south africa": "Africa/Johannesburg",
+    "johannesburg": "Africa/Johannesburg",
+    "cape town": "Africa/Johannesburg",
+    "zimbabwe": "Africa/Harare",
+    "harare": "Africa/Harare",
+    "namibia": "Africa/Windhoek",
+    "kenya": "Africa/Nairobi",
+    "uganda": "Africa/Kampala",
+    "tanzania": "Africa/Dar_es_Salaam",
+    "nigeria": "Africa/Lagos",
+    "ghana": "Africa/Accra",
+    "egypt": "Africa/Cairo",
+    "morocco": "Africa/Casablanca",
+    "algeria": "Africa/Algiers",
+    "tunisia": "Africa/Tunis",
+    "ethiopia": "Africa/Addis_Ababa",
+    "botswana": "Africa/Gaborone",
+    "zambia": "Africa/Lusaka",
+    "mozambique": "Africa/Maputo",
+
+    # Oceania
+    "australia": "Australia/Sydney",
+    "sydney": "Australia/Sydney",
+    "melbourne": "Australia/Melbourne",
+    "brisbane": "Australia/Brisbane",
+    "perth": "Australia/Perth",
+    "adelaide": "Australia/Adelaide",
+    "hobart": "Australia/Hobart",
+    "new zealand": "Pacific/Auckland",
+    "auckland": "Pacific/Auckland",
+    "wellington": "Pacific/Auckland",
+    "fiji": "Pacific/Fiji",
+    "papua new guinea": "Pacific/Port_Moresby",
+
+    # Caribbean / West Indies
+    "west indies": "America/Barbados",
+    "barbados": "America/Barbados",
+    "jamaica": "America/Jamaica",
+    "trinidad": "America/Port_of_Spain",
+    "guyana": "America/Guyana",
+    "saint lucia": "America/St_Lucia",
+    "grenada": "America/Grenada",
+
+    # North America
+    "usa": "America/New_York",
+    "united states": "America/New_York",
+    "new york": "America/New_York",
+    "florida": "America/New_York",
+    "texas": "America/Chicago",
+    "california": "America/Los_Angeles",
+    "los angeles": "America/Los_Angeles",
+    "canada": "America/Toronto",
+    "toronto": "America/Toronto",
+    "vancouver": "America/Vancouver",
+    "mexico": "America/Mexico_City",
+
+    # South America
+    "brazil": "America/Sao_Paulo",
+    "argentina": "America/Argentina/Buenos_Aires",
+    "chile": "America/Santiago",
+    "peru": "America/Lima",
+    "colombia": "America/Bogota",
+    "uruguay": "America/Montevideo",
+
+    # Asia East / South East
+    "singapore": "Asia/Singapore",
+    "malaysia": "Asia/Kuala_Lumpur",
+    "thailand": "Asia/Bangkok",
+    "indonesia": "Asia/Jakarta",
+    "jakarta": "Asia/Jakarta",
+    "philippines": "Asia/Manila",
+    "hong kong": "Asia/Hong_Kong",
+    "china": "Asia/Shanghai",
+    "beijing": "Asia/Shanghai",
+    "shanghai": "Asia/Shanghai",
+    "japan": "Asia/Tokyo",
+    "tokyo": "Asia/Tokyo",
+    "south korea": "Asia/Seoul",
+    "seoul": "Asia/Seoul",
+    "taiwan": "Asia/Taipei",
+    "mongolia": "Asia/Ulaanbaatar",
+    "kazakhstan": "Asia/Almaty",
+    "uzbekistan": "Asia/Tashkent",
+    "kyrgyzstan": "Asia/Bishkek",
+    "tajikistan": "Asia/Dushanbe",
+    "turkmenistan": "Asia/Ashgabat",
+    "russia": "Europe/Moscow"
+}
+
 # =====================================================
 # HELPERS
 # =====================================================
@@ -26,62 +179,14 @@ def clean_text(text):
 
 def unique_list(items):
     seen = set()
-    output = []
+    out = []
 
     for item in items:
         if item not in seen:
             seen.add(item)
-            output.append(item)
+            out.append(item)
 
-    return output
-
-
-def extract_ist_time(time_text):
-    """
-    Example:
-    7:00 PM LOCAL, 2:00 PM GMT, 7:00 AM PT, 10:00 AM ET
-
-    Output:
-    07:30 PM
-    """
-
-    try:
-        gmt_match = re.search(
-            r'(\d{1,2}:\d{2}\s*[APMapm]{2})\s*GMT',
-            time_text
-        )
-
-        if gmt_match:
-            gmt_time = gmt_match.group(1).upper().replace(" ", "")
-            dt = datetime.strptime(gmt_time, "%I:%M%p")
-            ist_dt = dt + timedelta(hours=5, minutes=30)
-            return ist_dt.strftime("%I:%M %p")
-
-    except:
-        pass
-
-    return time_text
-
-
-def format_ist_date(date_text):
-    """
-    Example:
-    Mon, 22 Jul 2025 -> 22-07-2025
-    """
-
-    patterns = [
-        "%a, %d %b %Y",
-        "%d %b %Y"
-    ]
-
-    for fmt in patterns:
-        try:
-            dt = datetime.strptime(date_text.strip(), fmt)
-            return dt.strftime("%d-%m-%Y"), dt.strftime("%A")
-        except:
-            pass
-
-    return date_text, ""
+    return out
 
 
 def get_html(url):
@@ -90,8 +195,66 @@ def get_html(url):
     return r.text
 
 
+def detect_timezone(city, venue, stadium):
+    text = f"{city} {venue} {stadium}".lower()
+
+    for key, tz in COUNTRY_TIMEZONES.items():
+        if key in text:
+            return tz
+
+    return "Asia/Kolkata"
+
+
+def parse_date(date_text):
+    for fmt in ["%a, %d %b %Y", "%d %b %Y"]:
+        try:
+            return datetime.strptime(date_text.strip(), fmt)
+        except:
+            pass
+    return None
+
+
+def parse_local_time(time_text):
+    m = re.search(r'(\d{1,2}:\d{2}\s*[APMapm]{2})\s*LOCAL', time_text)
+
+    if not m:
+        return None
+
+    try:
+        return datetime.strptime(
+            m.group(1).upper().replace(" ", ""),
+            "%I:%M%p"
+        )
+    except:
+        return None
+
+
+def convert_to_ist(date_text, time_text, tz_name):
+    base_date = parse_date(date_text)
+    local_clock = parse_local_time(time_text)
+
+    if not base_date or not local_clock:
+        return date_text, time_text, ""
+
+    local_dt = datetime(
+        year=base_date.year,
+        month=base_date.month,
+        day=base_date.day,
+        hour=local_clock.hour,
+        minute=local_clock.minute,
+        tzinfo=ZoneInfo(tz_name)
+    )
+
+    ist_dt = local_dt.astimezone(IST)
+
+    return (
+        ist_dt.strftime("%d-%m-%Y"),
+        ist_dt.strftime("%I:%M %p"),
+        ist_dt.strftime("%A")
+    )
+
 # =====================================================
-# STEP 1 - GET MATCH LINKS
+# GET LINKS
 # =====================================================
 
 print("Opening Cricbuzz schedule page...")
@@ -102,7 +265,6 @@ soup = BeautifulSoup(html, "html.parser")
 match_links = []
 
 for a in soup.find_all("a", href=True):
-
     href = a["href"]
     text = clean_text(a.get_text())
 
@@ -114,15 +276,15 @@ for a in soup.find_all("a", href=True):
         or "/live-cricket-scorecard/" in href
         or "/cricket-match-facts/" in href
     ):
-        full_url = href if href.startswith("http") else BASE_URL + href
-        match_links.append((text, full_url))
+        full = href if href.startswith("http") else BASE_URL + href
+        match_links.append((text, full))
 
 match_links = unique_list(match_links)
 
 print("Matches Found:", len(match_links))
 
 # =====================================================
-# STEP 2 - SCRAPE MATCHES
+# SCRAPE
 # =====================================================
 
 results = []
@@ -137,11 +299,13 @@ for idx, (title, link) in enumerate(match_links, start=1):
 
         print(f"[{idx}] Opening:", facts_url)
 
-        page_html = get_html(facts_url)
-        page = BeautifulSoup(page_html, "html.parser")
+        page = BeautifulSoup(get_html(facts_url), "html.parser")
 
-        body_text = page.get_text("\n")
-        lines = [clean_text(x) for x in body_text.split("\n") if clean_text(x)]
+        lines = [
+            clean_text(x)
+            for x in page.get_text("\n").split("\n")
+            if clean_text(x)
+        ]
 
         row = {
             "match_link_text": title,
@@ -152,68 +316,52 @@ for idx, (title, link) in enumerate(match_links, start=1):
             "date_ist": "",
             "time_ist": "",
             "day_ist": "",
-            "toss": "Toss not announced",
+            "timezone_source": "",
             "venue": "",
-            "umpires": "",
-            "referee": "",
             "stadium": "",
             "city": "",
-            "capacity": "",
-            "ends": "",
+            "toss": "Toss not announced",
             "source_url": facts_url
         }
 
-        # ---------------------------------------------
-        # Extract Data
-        # ---------------------------------------------
-
-        for i in range(len(lines) - 1):
-
+        for i in range(len(lines)-1):
             key = lines[i].lower()
-            val = lines[i + 1]
+            val = lines[i+1]
 
             if key == "match":
                 row["match"] = val
-
             elif key == "series":
                 row["series"] = val
-
             elif key == "date":
                 row["date_raw"] = val
-
             elif key == "time":
                 row["time_raw"] = val
-
+            elif key == "venue":
+                row["venue"] = val
+            elif key == "stadium":
+                row["stadium"] = val
+            elif key == "city":
+                row["city"] = val
             elif key == "toss" and val:
                 row["toss"] = val
 
-            elif key == "venue":
-                row["venue"] = val
+        tz = detect_timezone(
+            row["city"],
+            row["venue"],
+            row["stadium"]
+        )
 
-            elif key == "umpires":
-                row["umpires"] = val
+        row["timezone_source"] = tz
 
-            elif key == "referee":
-                row["referee"] = val
+        d, t, day = convert_to_ist(
+            row["date_raw"],
+            row["time_raw"],
+            tz
+        )
 
-            elif key == "stadium":
-                row["stadium"] = val
-
-            elif key == "city":
-                row["city"] = val
-
-            elif key == "capacity":
-                row["capacity"] = val
-
-            elif key == "ends":
-                row["ends"] = val
-
-        # ---------------------------------------------
-        # Convert to Indian Standard Time
-        # ---------------------------------------------
-
-        row["time_ist"] = extract_ist_time(row["time_raw"])
-        row["date_ist"], row["day_ist"] = format_ist_date(row["date_raw"])
+        row["date_ist"] = d
+        row["time_ist"] = t
+        row["day_ist"] = day
 
         results.append(row)
 
@@ -225,13 +373,13 @@ for idx, (title, link) in enumerate(match_links, start=1):
         print("Skipped:", title, str(e))
 
 # =====================================================
-# STEP 3 - SORT MATCHES
+# SORT
 # =====================================================
 
-def sort_key(item):
+def sort_key(x):
     try:
         return datetime.strptime(
-            item["date_ist"] + " " + item["time_ist"],
+            x["date_ist"] + " " + x["time_ist"],
             "%d-%m-%Y %I:%M %p"
         )
     except:
@@ -241,7 +389,7 @@ def sort_key(item):
 results.sort(key=sort_key)
 
 # =====================================================
-# STEP 4 - SAVE JSON
+# SAVE
 # =====================================================
 
 with open("matches.json", "w", encoding="utf-8") as f:
