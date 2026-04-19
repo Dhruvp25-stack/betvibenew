@@ -1,44 +1,37 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-
-options = Options()
-
-# Try this browser path
-options.binary_location = "/usr/bin/chromium-browser"
-
-# Stable flags
-options.add_argument("--headless")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
-options.add_argument("--disable-gpu")
-options.add_argument("--single-process")
-options.add_argument("--disable-extensions")
-options.add_argument("--window-size=1920,1080")
-
-driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()),
-    options=options
-)
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import json
+import time
 
 # =====================================================
-# OPEN CRICBUZZ SCHEDULE PAGE
+# CONFIG
 # =====================================================
-driver.get("https://www.cricbuzz.com/cricket-schedule/upcoming-series/all")
-time.sleep(5)
+BASE_URL = "https://www.cricbuzz.com"
+SCHEDULE_URL = f"{BASE_URL}/cricket-schedule/upcoming-series/all"
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0"
+}
 
 # =====================================================
 # GET ALL MATCH LINKS
 # =====================================================
-links = driver.find_elements(By.TAG_NAME, "a")
+print("Opening Cricbuzz schedule page...")
+
+response = requests.get(SCHEDULE_URL, headers=HEADERS, timeout=20)
+response.raise_for_status()
+
+soup = BeautifulSoup(response.text, "html.parser")
+
+links = soup.find_all("a")
 
 match_links = []
 
 for a in links:
     try:
-        text = a.text.strip()
-        href = a.get_attribute("href")
+        text = a.get_text(strip=True)
+        href = a.get("href")
 
         if href and text:
             if (
@@ -46,7 +39,8 @@ for a in links:
                 or "/live-cricket-scorecard/" in href
                 or "/cricket-match-facts/" in href
             ):
-                match_links.append((text, href))
+                full_url = href if href.startswith("http") else BASE_URL + href
+                match_links.append((text, full_url))
 
     except:
         pass
@@ -57,19 +51,13 @@ match_links = list(dict.fromkeys(match_links))
 print("Found", len(match_links), "matches")
 
 # =====================================================
-# SCRAPE EACH MATCH INFO PAGE
+# SCRAPE EACH MATCH PAGE
 # =====================================================
 results = []
-
-main_tab = driver.current_window_handle
 
 for match_name, link in match_links:
 
     try:
-        driver.execute_script("window.open('');")
-        driver.switch_to.window(driver.window_handles[-1])
-
-        # convert to info page
         info_link = link.replace(
             "/live-cricket-scores/",
             "/cricket-match-facts/"
@@ -78,11 +66,15 @@ for match_name, link in match_links:
             "/cricket-match-facts/"
         )
 
-        driver.get(info_link)
-        time.sleep(4)
+        print("Opening:", info_link)
 
-        body = driver.find_element(By.TAG_NAME, "body").text
-        lines = [x.strip() for x in body.split("\n") if x.strip()]
+        r = requests.get(info_link, headers=HEADERS, timeout=20)
+        r.raise_for_status()
+
+        page = BeautifulSoup(r.text, "html.parser")
+        body_text = page.get_text("\n")
+
+        lines = [x.strip() for x in body_text.split("\n") if x.strip()]
 
         row = {
             "match_link_text": match_name,
@@ -146,18 +138,13 @@ for match_name, link in match_links:
                 row["ends"] = val
 
         results.append(row)
+
         print(match_name, "=> Saved")
 
-        driver.close()
-        driver.switch_to.window(main_tab)
+        time.sleep(1)
 
     except Exception as e:
         print("Skipped:", match_name, str(e))
-
-# =====================================================
-# CLOSE BROWSER
-# =====================================================
-driver.quit()
 
 # =====================================================
 # SAVE TO JSON
