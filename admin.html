@@ -275,7 +275,7 @@ input[type=checkbox].toggle:checked::after{left:18px;}
       <div class="stat-box" data-icon="🎫"><div class="stat-lbl">Total Bets</div><div class="stat-val" id="adTotalBets">0</div></div>
       <div class="stat-box" data-icon="💬"><div class="stat-lbl">Open Tickets</div><div class="stat-val text-blue" id="adOpenTickets">0</div></div>
     </div>
-    <div class="card">
+    <div class="card" style="display:none;">
       <div class="card-header"><div class="card-title">📋 Recent Activity</div></div>
       <div id="adminRecentActivity" class="fs-13 text-muted">Loading...</div>
     </div>
@@ -290,7 +290,7 @@ input[type=checkbox].toggle:checked::after{left:18px;}
 
     <!-- RUN SCRAPER CARD -->
     <div class="card mb-16" style="border-color:rgba(0,200,83,0.35);">
-      <div class="card-header">
+      <div class="card-header" style="display:none;">
         <div class="card-title" style="display:flex;align-items:center;gap:10px;">
           🔄 Fetch Live Matches from Cricbuzz
           <span id="scraperStatusBadge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(122,139,168,0.15);color:#6a80a0;">Never Run</span>
