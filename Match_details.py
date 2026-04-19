@@ -182,47 +182,44 @@ def parse_local_time(txt):
 # =====================================================
 
 def convert_to_ist(date_text, time_text, tz_name):
+    try:
+        if not date_text or not time_text:
+            return "", "", ""
 
-    base_date = parse_date(date_text)
-    local_clock = parse_local_time(time_text)
+        # extract first time like 7:30 PM
+        m = re.search(r'(\d{1,2}:\d{2}\s*[APMapm]{2})', time_text)
+        if not m:
+            return "", "", ""
 
-    if not base_date or not local_clock:
-        return date_text, time_text, ""
-
-    # INDIA = NO CONVERSION
-    if tz_name == "Asia/Kolkata":
-
-        dt = datetime(
-            base_date.year,
-            base_date.month,
-            base_date.day,
-            local_clock.hour,
-            local_clock.minute
+        tm = datetime.strptime(
+            m.group(1).upper().replace(" ", ""),
+            "%I:%M%p"
         )
+
+        # parse date
+        date_obj = parse_date(date_text)
+        if not date_obj:
+            date_obj = datetime.now()
+
+        local_dt = datetime(
+            date_obj.year,
+            date_obj.month,
+            date_obj.day,
+            tm.hour,
+            tm.minute,
+            tzinfo=ZoneInfo(tz_name)
+        )
+
+        ist_dt = local_dt.astimezone(IST)
 
         return (
-            dt.strftime("%d-%m-%Y"),
-            dt.strftime("%I:%M %p"),
-            dt.strftime("%A")
+            ist_dt.strftime("%d-%m-%Y"),
+            ist_dt.strftime("%I:%M %p").lstrip("0"),
+            ist_dt.strftime("%a")
         )
 
-    # OTHER COUNTRIES
-    local_dt = datetime(
-        base_date.year,
-        base_date.month,
-        base_date.day,
-        local_clock.hour,
-        local_clock.minute,
-        tzinfo=ZoneInfo(tz_name)
-    )
-
-    ist_dt = local_dt.astimezone(IST)
-
-    return (
-        ist_dt.strftime("%d-%m-%Y"),
-        ist_dt.strftime("%I:%M %p"),
-        ist_dt.strftime("%A")
-    )
+    except:
+        return "", "", ""
 
 # =====================================================
 # GET MATCH LINKS
@@ -345,7 +342,7 @@ try:
     )
 
     toss_dt = match_dt - timedelta(minutes=30)
-    close_dt = match_dt - timedelta(minutes=60)
+    close_dt = toss_dt - timedelta(minutes=30)
 
     row["toss_time_ist"] = toss_dt.strftime("%d-%m-%Y %I:%M %p")
     row["toss_bet_close_ist"] = close_dt.strftime("%d-%m-%Y %I:%M %p")
@@ -353,15 +350,6 @@ try:
 except:
     row["toss_time_ist"] = ""
     row["toss_bet_close_ist"] = ""
-
-        results.append(row)
-
-        print("Saved:", row["match"] or title)
-
-        time.sleep(1)
-
-    except Exception as e:
-        print("Skipped:", title, str(e))
 
 # =====================================================
 # REMOVE DUPLICATES
