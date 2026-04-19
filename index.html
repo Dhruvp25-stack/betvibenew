@@ -374,7 +374,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
     <h3>1. Age Requirement</h3><p>You must be 18+ to use BetVibe. Any violation leads to immediate account termination.</p>
     <h3>2. Account Registration</h3><p>One account per user. Multiple accounts will be permanently banned.</p>
     <h3>3. Deposits & Withdrawals</h3><p>Min deposit: ₹300. Max: ₹10,000. Min withdrawal: ₹300. 70% wagering requirement before withdrawal.</p>
-    <h3>4. Betting Rules</h3><p>All toss bets carry odds of 1.95. Market closes 30 minutes before match. Minimum bet: ₹100.</p>
+    <h3>4. Betting Rules</h3><p>All toss bets carry odds of 1.95. Toss market closes 60 minutes before match start. Minimum bet: ₹100.</p>
     <h3>5. Responsible Gaming</h3><p>BetVibe encourages responsible gaming. Use self-exclusion if needed.</p>
     <h3>6. Privacy & Data</h3><p>Data collected for service delivery only and not shared with third parties.</p>
     <h3>7. Fair Play</h3><p>Any manipulation or fraud results in immediate account termination.</p>
@@ -823,10 +823,7 @@ function initDB() {
 
 // ─────────────────────────────────────────────────────────
 // BACKEND CONFIG
-// Set this to your Railway/Render backend URL when deploying.
-// Leave empty ('') to use same-origin (local Flask server).
-// Example: const BACKEND_URL = 'https://betvibe-backend.up.railway.app';
-const BACKEND_URL = 'https://cdn.jsdelivr.net/gh/Dhruvp25-stack/betvibenew@main';
+const BACKEND_URL = 'https://web-production-e046e.up.railway.app';
 function apiUrl(path) {
   return BACKEND_URL ? BACKEND_URL.replace(/\/$/, '') + path : path;
 }
@@ -835,7 +832,6 @@ function apiUrl(path) {
 async function getDefaultMatches() {
   try {
     const res = await fetch(apiUrl('/matches.json') + '?t=' + Date.now());
-    // If the server returns HTML (not running via Flask), gracefully bail out
     const contentType = res.headers.get('content-type') || '';
     if (!res.ok || !contentType.includes('json')) {
       console.warn('matches.json not available — server may not be running.');
@@ -851,12 +847,9 @@ async function getDefaultMatches() {
 
     return data
       .map((raw, idx) => {
-        // Parse teams from match_link_text or match field
-        // e.g. "KKR vs RR" or "RR vs KKR - Need 119 off 93b"
         const matchStr = raw.match || raw.match_link_text || '';
         const venueStr = raw.venue || raw.stadium || '';
 
-        // Parse team names - try "Team1 vs Team2" pattern
         let team1 = 'Team A', team2 = 'Team B';
         const vsMatch = matchStr.match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i) ||
                         (raw.match_link_text || '').match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i);
@@ -865,14 +858,11 @@ async function getDefaultMatches() {
           team2 = vsMatch[2].trim().split(/[\-•]/)[0].trim();
         }
 
-        // Parse toss winner from toss field
-        // e.g. "Rajasthan Royals won the toss and opt to Bat"
         let tossResult = null;
         if (raw.toss && raw.toss !== 'Toss not announced') {
           const tossWinner = raw.toss.match(/^([^w]+)\s+won the toss/i);
           if (tossWinner) {
             const winner = tossWinner[1].trim();
-            // Try to match to team1/team2 abbreviation or name
             if (winner.toLowerCase().includes(team1.toLowerCase()) ||
                 team1.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w))) {
               tossResult = team1;
@@ -880,17 +870,15 @@ async function getDefaultMatches() {
                 team2.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w))) {
               tossResult = team2;
             } else {
-              // keep full winner name
               tossResult = winner;
             }
           }
         }
 
-        // Parse date/time to timestamp
-        let matchTimestamp = now + (idx + 1) * 3 * 60 * 60 * 1000; // fallback: future slots
+        let matchTimestamp = now + (idx + 1) * 3 * 60 * 60 * 1000;
         if (raw.date && raw.time) {
           try {
-            const timeStr = raw.time.split(',')[0].trim(); // "3:30 PM LOCAL"
+            const timeStr = raw.time.split(',')[0].trim();
             const timeOnly = timeStr.replace(' LOCAL','').trim();
             const dateStr = raw.date === 'Today' ? new Date().toDateString() : raw.date;
             const parsed = new Date(dateStr + ' ' + timeOnly);
@@ -898,10 +886,13 @@ async function getDefaultMatches() {
           } catch(e) {}
         }
 
-        const status = tossResult ? 'live' :
-          (matchTimestamp < now - 60 * 60 * 1000) ? 'live' : 'upcoming';
-        const marketOpen = !tossResult && status === 'upcoming' &&
-          (matchTimestamp - now) > 30 * 60 * 1000;
+        // PATCH: derive status and marketOpen using isTossMarketOpen logic
+        const closeTime = matchTimestamp - (60 * 60 * 1000); // 60 min before match
+        const status = tossResult ? 'completed' :
+          (now >= matchTimestamp) ? 'live' : 'upcoming';
+        const marketOpen = !tossResult &&
+          status === 'upcoming' &&
+          now < closeTime;
 
         return {
           id: 'm_' + idx + '_' + (raw.match || '').replace(/[^a-z0-9]/gi, '').slice(0, 12),
@@ -915,7 +906,6 @@ async function getDefaultMatches() {
           toss: raw.toss || '',
           totalBets: 0,
           marketOpen,
-          // match details
           venue: venueStr,
           stadium: raw.stadium || '',
           city: raw.city || '',
@@ -928,10 +918,9 @@ async function getDefaultMatches() {
         };
       })
       .filter(m => {
-        // Keep within next 48h IST or live/completed
         if (m.status === 'live' || m.status === 'completed') return true;
         const matchIST = (m.time || 0) + IST_OFFSET;
-        return matchIST <= cutoffIST;
+        return matchIST <= cutoffIST && matchIST >= (nowIST - 6 * 60 * 60 * 1000);
       });
   } catch (err) {
     console.error('Failed to load matches.json:', err);
@@ -963,10 +952,8 @@ window.addEventListener('load', () => {
     document.getElementById('loader').classList.add('hide');
     checkMaintenance();
   }, 1600);
-  // login enter key
   document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-  // close notif on outside click
   document.addEventListener('click', e => {
     if (!e.target.closest('#notifPanel') && !e.target.closest('#notifBell')) document.getElementById('notifPanel').classList.add('hidden');
   });
@@ -1172,6 +1159,30 @@ function startSessionTimer() {
 }
 
 // =====================================================================
+// TOSS MARKET OPEN CHECK  ← PATCH: new authoritative function
+// =====================================================================
+function isTossMarketOpen(match) {
+  try {
+    const now = Date.now();
+    const matchTime =
+      typeof match.time === 'number'
+        ? match.time
+        : new Date(
+            (match.date_ist || '') + ' ' + (match.time_ist || '')
+          ).getTime();
+    if (!matchTime || isNaN(matchTime)) return false;
+    // Market closes exactly 60 minutes before match start
+    const closeTime = matchTime - (60 * 60 * 1000);
+    if (match.tossResult) return false;
+    if (match.status === 'live') return false;
+    if (match.status === 'completed') return false;
+    return now < closeTime;
+  } catch(e) {
+    return false;
+  }
+}
+
+// =====================================================================
 // MATCHES
 // =====================================================================
 function startRefreshTimer() {
@@ -1204,16 +1215,26 @@ function autoUpdateMatchStatuses() {
   const now = Date.now();
   let changed = false;
   matches.forEach(m => {
-    if (m.status==='upcoming' && now >= m.time) { m.status='live'; m.marketOpen=false; changed=true; }
-    if (m.status==='upcoming' && (m.time-now) <= 30*60*1000) { m.marketOpen=false; changed=true; }
+    const matchTime = typeof m.time === 'number' ? m.time : 0;
+    const closeTime = matchTime - (60 * 60 * 1000); // PATCH: 60 min before match
+
+    // If match time has passed → mark live
+    if (m.status === 'upcoming' && matchTime > 0 && now >= matchTime) {
+      m.status = 'live';
+      m.marketOpen = false;
+      changed = true;
+    }
+    // If within 60 minutes of match start → close toss market
+    if (m.status === 'upcoming' && matchTime > 0 && now >= closeTime) {
+      m.marketOpen = false;
+      changed = true;
+    }
   });
   if (changed) DB.set('matches', matches);
 }
 
 function autoSettleToss() {
-  // Simulate toss win.py: check live matches without result and auto-settle based on stored data
-  // In production this would call the Python script result
-  // For now just processes any pre-set toss results stored by admin
+  // Processes any pre-set toss results stored by admin
 }
 
 function getTeamLogo(teamName) {
@@ -1268,17 +1289,15 @@ function showMatchDetails(matchId) {
 function renderMatches() {
   let matches = DB.get('matches') || [];
 
-  // IST = UTC+5:30
   const now = Date.now();
   const IST_OFFSET = 5.5 * 60 * 60 * 1000;
   const nowIST = now + IST_OFFSET;
   const cutoffIST = nowIST + 48 * 60 * 60 * 1000;
 
-  // Filter: show only matches within next 48 hours IST (or already live/completed)
   matches = matches.filter(m => {
     if (m.status === 'live' || m.status === 'completed') return true;
     const matchIST = (m.time || 0) + IST_OFFSET;
-    return matchIST <= cutoffIST && matchIST >= (nowIST - 6 * 60 * 60 * 1000); // also show matches from last 6h
+    return matchIST <= cutoffIST && matchIST >= (nowIST - 6 * 60 * 60 * 1000);
   });
 
   document.getElementById('heroLiveCount').textContent = matches.filter(m => m.status === 'live').length;
@@ -1289,16 +1308,38 @@ function renderMatches() {
   const grid = document.getElementById('matchesGrid');
 
   grid.innerHTML = filtered.map(m => {
-    const timeLeft = m.time - now;
+    // PATCH: use isTossMarketOpen for all canBet checks
+    const canBet = isTossMarketOpen(m);
+
+    const matchTime = typeof m.time === 'number' ? m.time : 0;
+    const closeTime = matchTime - (60 * 60 * 1000);
+    const timeLeft = matchTime - now;
     const mins = Math.floor(timeLeft / 60000);
-    const timeStr = m.status === 'live' ? '🔴 LIVE' :
-      m.status === 'completed' ? 'COMPLETED' :
-      mins <= 0 ? 'Started' :
-      mins <= 30 ? `${mins}m (Closed)` :
-      new Date(m.time).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    // Time label shown in badge
+    let timeStr;
+    if (m.status === 'live') {
+      timeStr = '🔴 LIVE';
+    } else if (m.status === 'completed') {
+      timeStr = 'COMPLETED';
+    } else if (mins <= 0) {
+      timeStr = 'Started';
+    } else if (now >= closeTime) {
+      // Market closed but match not yet started
+      timeStr = mins <= 60 ? `${mins}m (Closed)` : new Date(matchTime).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } else {
+      timeStr = new Date(matchTime).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
     const badgeCls = m.status === 'live' ? 'badge-live' : m.status === 'upcoming' ? 'badge-upcoming' : m.status === 'completed' ? 'badge-done' : 'badge-closed';
-    const canBet = m.marketOpen && m.status === 'upcoming' && !m.tossResult;
     const hasDetails = m.venue || m.stadium || m.umpires || m.city;
+
+    // Closed reason label
+    let lockedMsg = '🔒 Betting Closed';
+    if (m.status === 'completed') lockedMsg = '✅ Match Completed';
+    else if (m.status === 'live') lockedMsg = '⏳ Awaiting Toss Settlement';
+    else if (m.tossResult) lockedMsg = '✅ Toss Declared';
+    else if (!canBet && m.status === 'upcoming') lockedMsg = '🔒 Market Closed (Toss Soon)';
 
     return `<div class="match-card">
       <div class="match-top">
@@ -1323,11 +1364,11 @@ function renderMatches() {
         </div>
       </div>
       <div class="fs-12 text-muted text-center mt-8">Min: 🪙${limits.min} | Max: 🪙${limits.max}</div>` :
-        `<div class="match-locked">${m.status === 'completed' ? '✅ Match Completed' : m.status === 'live' ? '⏳ Awaiting Toss Settlement' : '🔒 Betting Closed'}</div>`}
+        `<div class="match-locked">${lockedMsg}</div>`}
       <div class="match-footer">
         <span>🎫 Bets: ${m.totalBets || 0}</span>
         ${hasDetails ? `<span style="color:var(--blue-light);cursor:pointer;font-size:11px;" onclick="showMatchDetails('${m.id}')">ℹ️ Details</span>` : ''}
-        <span>${m.venue ? '📍 ' + (m.city || m.venue) : new Date(m.time).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+        <span>${m.venue ? '📍 ' + (m.city || m.venue) : new Date(matchTime).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
       </div>
     </div>`;
   }).join('');
@@ -1349,7 +1390,8 @@ function openBetModal(matchId, team) {
   if (!currentUser) return toast('Please login first', 'danger');
   const matches = DB.get('matches');
   const match = matches.find(m => m.id===matchId);
-  if (!match || !match.marketOpen) return toast('Market is closed', 'danger');
+  // PATCH: use isTossMarketOpen for the gate check
+  if (!match || !isTossMarketOpen(match)) return toast('Market is closed', 'danger');
   const limits = DB.get('betLimits') || { min:100, max:10000 };
   betModalData = { match, team };
 
@@ -1383,7 +1425,7 @@ function calcWin(v) {
   document.getElementById('winDisp').textContent = '🪙 '+(s*1.95).toFixed(2);
 }
 
-function confirmBet() {
+async function confirmBet() {
   const limits = DB.get('betLimits') || { min:100, max:10000 };
   const amt = parseFloat(document.getElementById('betAmount').value);
   if (!amt || amt < limits.min) return toast(`Minimum bet is 🪙${limits.min}`, 'danger');
@@ -1391,6 +1433,31 @@ function confirmBet() {
   if (amt > currentUser.balance) return toast('Insufficient coins', 'danger');
 
   const { match, team } = betModalData;
+
+  // ── BACKEND PRE-FLIGHT: ask server if market is still open ──────────
+  try {
+    const matchLabel = match.team1 + ' vs ' + match.team2;
+    const res = await fetch(apiUrl('/api/can-place-bet'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ match: matchLabel })
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      closeModal('betModal');
+      toast('🔒 Toss market closed', 'danger');
+      return;
+    }
+  } catch (err) {
+    // Backend unreachable — fall through to local time check below
+    console.warn('can-place-bet API unavailable, using local check:', err);
+  }
+  // ── LOCAL FALLBACK: re-verify with isTossMarketOpen ─────────────────
+  if (!isTossMarketOpen(match)) {
+    closeModal('betModal');
+    return toast('Market has closed. Bet not placed.', 'danger');
+  }
+
   const users = DB.get('users');
   const user = users.find(u => u.id===currentUser.id);
   user.balance -= amt;
@@ -1454,7 +1521,6 @@ function refreshWallet() {
   renderDepositBanks();
   renderDepositCoupons();
   updateNavUser();
-  // show deposit by default
   document.getElementById('walletDeposit').classList.remove('hidden');
   document.getElementById('walletWithdraw').classList.add('hidden');
   document.getElementById('walletHistory').classList.add('hidden');
@@ -1505,7 +1571,7 @@ function submitDeposit() {
   if (!selectedBankId) return toast('Please select a bank account', 'danger');
 
   const coupons = DB.get('depositCoupons')||[];
-  const match = coupons.find(c => c.amount<=amount).sort ? coupons.filter(c=>c.amount<=amount).sort((a,b)=>b.amount-a.amount)[0] : coupons.filter(c=>c.amount<=amount).pop();
+  const match = coupons.filter(c=>c.amount<=amount).sort((a,b)=>b.amount-a.amount)[0];
   const couponBonus = match ? match.bonus : 0;
 
   const deps = DB.get('deposits');
@@ -1794,7 +1860,7 @@ function openFAQ(topic) {
   const faqs = {
     deposit:'To deposit: Coins → Deposit → Select bank → Send payment → Upload screenshot with UTR → Submit. Coins added after admin approval (1-2 hours).',
     withdraw:'To withdraw: Coins → Withdraw → Enter bank details → Amount → Withdrawal password → Submit. Admin processes within 24 hours.',
-    bet:"To bet: Matches → Click odds button → Enter amount → Confirm. Market closes 30 mins before match.",
+    bet:'To bet: Matches → Click odds button → Enter amount → Confirm. Toss market closes 60 minutes before match start.',
     toss:'Toss is auto-settled every 20 seconds from live data. You get a notification when bets are settled.'
   };
   alert(faqs[topic]||'Contact support for help.');
@@ -1830,7 +1896,7 @@ function autoReply(msg) {
   let reply = 'Thanks for reaching out! Our team will respond shortly. You can also raise a support ticket.';
   if (lower.includes('deposit')) reply = 'For deposits: go to 🪙 Coins → Deposit, select a bank, send payment, upload screenshot with UTR. Approval within 1-2 hours.';
   else if (lower.includes('withdraw')) reply = 'For withdrawals: 🪙 Coins → Withdraw, fill bank details and withdrawal password. Admin approves within 24 hours.';
-  else if (lower.includes('bet')) reply = 'Bets settled on official toss result. If you have a query, raise a support ticket.';
+  else if (lower.includes('bet')) reply = 'Bets settled on official toss result. Toss market closes 60 minutes before match start. If you have a query, raise a support ticket.';
   else if (lower.includes('balance') || lower.includes('coin')) reply = 'Your coin balance is shown at the top right. Coins credited after deposit approval.';
   const links = DB.get('supportLinks')||{};
   if (links.whatsapp) reply += `\n\nWhatsApp: ${links.whatsapp}`;
@@ -1873,11 +1939,11 @@ function settleToss(matchId, winner) {
   if (currentUser) { renderMatches(); renderNotifications(); updateNavUser(); }
   return settled;
 }
+
 // Auto-refresh matches from server every 60s and auto-settle from toss field
 setInterval(async () => {
   const data = await getDefaultMatches();
   if (data && data.length) {
-    // Merge: preserve bet counts, only update match metadata and toss results
     const existing = DB.get('matches') || [];
     const merged = data.map(fresh => {
       const old = existing.find(e => e.id === fresh.id);
