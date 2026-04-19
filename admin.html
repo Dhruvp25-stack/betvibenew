@@ -698,13 +698,14 @@ async function runScraper() {
       btn.textContent = '▶ Run Scraper Now';
     }
   } catch (e) {
-    msg.textContent = '❌ Cannot reach server. Is server.py running on port 5000?';
+    msg.textContent = '';
     btn.disabled = false;
     btn.textContent = '▶ Run Scraper Now';
   }
 }
 
 async function checkScraperStatus() {
+  return;
   try {
     const res = await fetch(apiUrl('/api/scraper-status'), {
       headers: BACKEND_URL ? { 'X-Admin-Key': ADMIN_KEY } : {}
