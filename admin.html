@@ -212,7 +212,6 @@ input[type=checkbox].toggle:checked::after{left:18px;}
     <div class="form-grp"><label class="form-lbl">Admin Username</label><input type="text" id="admin-user" class="form-inp" placeholder="Enter admin username"></div>
     <div class="form-grp"><label class="form-lbl">Admin Password</label><input type="password" id="admin-pass" class="form-inp" placeholder="Enter admin password"></div>
     <button class="btn btn-primary btn-block" onclick="doAdminLogin()">Access Admin Panel</button>
-    <p class="text-center fs-12 text-muted mt-12">Default: admin / admin123</p>
   </div>
 </div>
 </div>
@@ -607,7 +606,7 @@ function logAdminAction(action) {
 function doAdminLogin() {
   const u = document.getElementById('admin-user').value;
   const p = document.getElementById('admin-pass').value;
-  if (u==='admin' && p==='admin123') {
+  if (u==='admin' && p==='DDR252429') {
     document.getElementById('adminLastLogin').textContent = new Date().toLocaleString();
     showView('view-admin');
     goPanel('dashboard');
