@@ -4,18 +4,21 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
 options = Options()
-options.binary_location = "/usr/bin/chromium"
 
-options.add_argument("--headless=new")
+# Try this browser path
+options.binary_location = "/usr/bin/chromium-browser"
+
+# Stable flags
+options.add_argument("--headless")
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
+options.add_argument("--single-process")
+options.add_argument("--disable-extensions")
 options.add_argument("--window-size=1920,1080")
 
-service = Service(ChromeDriverManager().install())
-
 driver = webdriver.Chrome(
-    service=service,
+    service=Service(ChromeDriverManager().install()),
     options=options
 )
 
