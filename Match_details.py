@@ -335,6 +335,25 @@ for idx, (title, link) in enumerate(match_links, start=1):
         row["time_ist"] = t
         row["day_ist"] = day
 
+# Toss = 30 mins before match
+# Toss betting close = 60 mins before match
+
+try:
+    match_dt = datetime.strptime(
+        d + " " + t,
+        "%d-%m-%Y %I:%M %p"
+    )
+
+    toss_dt = match_dt - timedelta(minutes=30)
+    close_dt = match_dt - timedelta(minutes=60)
+
+    row["toss_time_ist"] = toss_dt.strftime("%d-%m-%Y %I:%M %p")
+    row["toss_bet_close_ist"] = close_dt.strftime("%d-%m-%Y %I:%M %p")
+
+except:
+    row["toss_time_ist"] = ""
+    row["toss_bet_close_ist"] = ""
+
         results.append(row)
 
         print("Saved:", row["match"] or title)
