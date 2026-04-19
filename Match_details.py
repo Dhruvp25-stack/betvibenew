@@ -20,153 +20,92 @@ HEADERS = {
 IST = ZoneInfo("Asia/Kolkata")
 
 # =====================================================
-# GLOBAL COUNTRY / CITY TIMEZONES
-# Expanded coverage for cricket + general world locations
+# WORLD TIMEZONE DATABASE
 # =====================================================
 
-COUNTRY_TIMEZONES = {
-    # South Asia
-    "india": "Asia/Kolkata",
-    "bangladesh": "Asia/Dhaka",
-    "pakistan": "Asia/Karachi",
-    "sri lanka": "Asia/Colombo",
-    "nepal": "Asia/Kathmandu",
-    "afghanistan": "Asia/Kabul",
-    "bhutan": "Asia/Thimphu",
-    "maldives": "Indian/Maldives",
+TIMEZONE_DB = {
 
-    # Middle East
+    # INDIA
+    "india": "Asia/Kolkata",
+    "ahmedabad": "Asia/Kolkata",
+    "mumbai": "Asia/Kolkata",
+    "delhi": "Asia/Kolkata",
+    "chennai": "Asia/Kolkata",
+    "kolkata": "Asia/Kolkata",
+    "hyderabad": "Asia/Kolkata",
+    "bengaluru": "Asia/Kolkata",
+    "jaipur": "Asia/Kolkata",
+    "lucknow": "Asia/Kolkata",
+    "mohali": "Asia/Kolkata",
+    "guwahati": "Asia/Kolkata",
+
+    # BANGLADESH
+    "bangladesh": "Asia/Dhaka",
+    "dhaka": "Asia/Dhaka",
+    "mirpur": "Asia/Dhaka",
+
+    # PAKISTAN
+    "pakistan": "Asia/Karachi",
+    "lahore": "Asia/Karachi",
+    "karachi": "Asia/Karachi",
+
+    # SRI LANKA
+    "sri lanka": "Asia/Colombo",
+    "colombo": "Asia/Colombo",
+
+    # UAE
     "uae": "Asia/Dubai",
     "dubai": "Asia/Dubai",
     "abu dhabi": "Asia/Dubai",
-    "oman": "Asia/Muscat",
-    "qatar": "Asia/Qatar",
-    "saudi arabia": "Asia/Riyadh",
-    "kuwait": "Asia/Kuwait",
-    "bahrain": "Asia/Bahrain",
-    "jordan": "Asia/Amman",
-    "israel": "Asia/Jerusalem",
-    "iraq": "Asia/Baghdad",
-    "iran": "Asia/Tehran",
+    "sharjah": "Asia/Dubai",
 
-    # Europe
+    # ENGLAND
     "england": "Europe/London",
     "london": "Europe/London",
-    "united kingdom": "Europe/London",
-    "scotland": "Europe/London",
-    "wales": "Europe/London",
-    "ireland": "Europe/Dublin",
-    "netherlands": "Europe/Amsterdam",
-    "amsterdam": "Europe/Amsterdam",
-    "germany": "Europe/Berlin",
-    "france": "Europe/Paris",
-    "spain": "Europe/Madrid",
-    "italy": "Europe/Rome",
-    "switzerland": "Europe/Zurich",
-    "belgium": "Europe/Brussels",
-    "portugal": "Europe/Lisbon",
-    "norway": "Europe/Oslo",
-    "sweden": "Europe/Stockholm",
-    "denmark": "Europe/Copenhagen",
-    "finland": "Europe/Helsinki",
-    "poland": "Europe/Warsaw",
-    "austria": "Europe/Vienna",
-    "greece": "Europe/Athens",
-    "turkey": "Europe/Istanbul",
-    "romania": "Europe/Bucharest",
-    "hungary": "Europe/Budapest",
-    "czech": "Europe/Prague",
-    "croatia": "Europe/Zagreb",
-    "serbia": "Europe/Belgrade",
+    "manchester": "Europe/London",
 
-    # Africa
-    "south africa": "Africa/Johannesburg",
-    "johannesburg": "Africa/Johannesburg",
-    "cape town": "Africa/Johannesburg",
-    "zimbabwe": "Africa/Harare",
-    "harare": "Africa/Harare",
-    "namibia": "Africa/Windhoek",
-    "kenya": "Africa/Nairobi",
-    "uganda": "Africa/Kampala",
-    "tanzania": "Africa/Dar_es_Salaam",
-    "nigeria": "Africa/Lagos",
-    "ghana": "Africa/Accra",
-    "egypt": "Africa/Cairo",
-    "morocco": "Africa/Casablanca",
-    "algeria": "Africa/Algiers",
-    "tunisia": "Africa/Tunis",
-    "ethiopia": "Africa/Addis_Ababa",
-    "botswana": "Africa/Gaborone",
-    "zambia": "Africa/Lusaka",
-    "mozambique": "Africa/Maputo",
-
-    # Oceania
+    # AUSTRALIA
     "australia": "Australia/Sydney",
     "sydney": "Australia/Sydney",
     "melbourne": "Australia/Melbourne",
     "brisbane": "Australia/Brisbane",
     "perth": "Australia/Perth",
-    "adelaide": "Australia/Adelaide",
-    "hobart": "Australia/Hobart",
+
+    # NEW ZEALAND
     "new zealand": "Pacific/Auckland",
     "auckland": "Pacific/Auckland",
-    "wellington": "Pacific/Auckland",
-    "fiji": "Pacific/Fiji",
-    "papua new guinea": "Pacific/Port_Moresby",
 
-    # Caribbean / West Indies
+    # SOUTH AFRICA
+    "south africa": "Africa/Johannesburg",
+    "johannesburg": "Africa/Johannesburg",
+    "cape town": "Africa/Johannesburg",
+
+    # WEST INDIES
     "west indies": "America/Barbados",
     "barbados": "America/Barbados",
     "jamaica": "America/Jamaica",
-    "trinidad": "America/Port_of_Spain",
     "guyana": "America/Guyana",
-    "saint lucia": "America/St_Lucia",
-    "grenada": "America/Grenada",
 
-    # North America
+    # USA
     "usa": "America/New_York",
-    "united states": "America/New_York",
     "new york": "America/New_York",
-    "florida": "America/New_York",
-    "texas": "America/Chicago",
-    "california": "America/Los_Angeles",
-    "los angeles": "America/Los_Angeles",
+
+    # CANADA
     "canada": "America/Toronto",
-    "toronto": "America/Toronto",
-    "vancouver": "America/Vancouver",
-    "mexico": "America/Mexico_City",
 
-    # South America
-    "brazil": "America/Sao_Paulo",
-    "argentina": "America/Argentina/Buenos_Aires",
-    "chile": "America/Santiago",
-    "peru": "America/Lima",
-    "colombia": "America/Bogota",
-    "uruguay": "America/Montevideo",
-
-    # Asia East / South East
+    # ASIA
     "singapore": "Asia/Singapore",
     "malaysia": "Asia/Kuala_Lumpur",
     "thailand": "Asia/Bangkok",
-    "indonesia": "Asia/Jakarta",
-    "jakarta": "Asia/Jakarta",
-    "philippines": "Asia/Manila",
     "hong kong": "Asia/Hong_Kong",
     "china": "Asia/Shanghai",
-    "beijing": "Asia/Shanghai",
-    "shanghai": "Asia/Shanghai",
     "japan": "Asia/Tokyo",
-    "tokyo": "Asia/Tokyo",
-    "south korea": "Asia/Seoul",
-    "seoul": "Asia/Seoul",
-    "taiwan": "Asia/Taipei",
-    "mongolia": "Asia/Ulaanbaatar",
-    "kazakhstan": "Asia/Almaty",
-    "uzbekistan": "Asia/Tashkent",
-    "kyrgyzstan": "Asia/Bishkek",
-    "tajikistan": "Asia/Dushanbe",
-    "turkmenistan": "Asia/Ashgabat",
-    "russia": "Europe/Moscow"
+
+    # EUROPE
+    "ireland": "Europe/Dublin",
+    "netherlands": "Europe/Amsterdam",
+    "germany": "Europe/Berlin",
+    "france": "Europe/Paris"
 }
 
 # =====================================================
@@ -177,7 +116,13 @@ def clean_text(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
-def unique_list(items):
+def get_html(url):
+    r = requests.get(url, headers=HEADERS, timeout=20)
+    r.raise_for_status()
+    return r.text
+
+
+def unique_links(items):
     seen = set()
     out = []
 
@@ -189,59 +134,85 @@ def unique_list(items):
     return out
 
 
-def get_html(url):
-    r = requests.get(url, headers=HEADERS, timeout=20)
-    r.raise_for_status()
-    return r.text
-
-
-def detect_timezone(city, venue, stadium):
+def detect_timezone(city="", venue="", stadium=""):
     text = f"{city} {venue} {stadium}".lower()
 
-    for key, tz in COUNTRY_TIMEZONES.items():
+    for key, tz in TIMEZONE_DB.items():
         if key in text:
             return tz
 
     return "Asia/Kolkata"
 
 
-def parse_date(date_text):
-    for fmt in ["%a, %d %b %Y", "%d %b %Y"]:
+def parse_date(txt):
+
+    formats = [
+        "%a, %d %b %Y",
+        "%d %b %Y",
+        "%d-%m-%Y",
+        "%d/%m/%Y"
+    ]
+
+    for fmt in formats:
         try:
-            return datetime.strptime(date_text.strip(), fmt)
+            return datetime.strptime(txt.strip(), fmt)
         except:
             pass
+
     return None
 
 
-def parse_local_time(time_text):
-    m = re.search(r'(\d{1,2}:\d{2}\s*[APMapm]{2})\s*LOCAL', time_text)
+def parse_local_time(txt):
+
+    m = re.search(r'(\d{1,2}:\d{2}\s*[APMapm]{2})', txt)
 
     if not m:
         return None
 
+    raw = m.group(1).upper().replace(" ", "")
+
     try:
-        return datetime.strptime(
-            m.group(1).upper().replace(" ", ""),
-            "%I:%M%p"
-        )
+        return datetime.strptime(raw, "%I:%M%p")
     except:
         return None
 
 
+# =====================================================
+# PERFECT CONVERSION
+# =====================================================
+
 def convert_to_ist(date_text, time_text, tz_name):
+
     base_date = parse_date(date_text)
     local_clock = parse_local_time(time_text)
 
     if not base_date or not local_clock:
         return date_text, time_text, ""
 
+    # INDIA = NO CONVERSION
+    if tz_name == "Asia/Kolkata":
+
+        dt = datetime(
+            base_date.year,
+            base_date.month,
+            base_date.day,
+            local_clock.hour,
+            local_clock.minute
+        )
+
+        return (
+            dt.strftime("%d-%m-%Y"),
+            dt.strftime("%I:%M %p"),
+            dt.strftime("%A")
+        )
+
+    # OTHER COUNTRIES
     local_dt = datetime(
-        year=base_date.year,
-        month=base_date.month,
-        day=base_date.day,
-        hour=local_clock.hour,
-        minute=local_clock.minute,
+        base_date.year,
+        base_date.month,
+        base_date.day,
+        local_clock.hour,
+        local_clock.minute,
         tzinfo=ZoneInfo(tz_name)
     )
 
@@ -254,7 +225,7 @@ def convert_to_ist(date_text, time_text, tz_name):
     )
 
 # =====================================================
-# GET LINKS
+# GET MATCH LINKS
 # =====================================================
 
 print("Opening Cricbuzz schedule page...")
@@ -265,21 +236,20 @@ soup = BeautifulSoup(html, "html.parser")
 match_links = []
 
 for a in soup.find_all("a", href=True):
+
     href = a["href"]
     text = clean_text(a.get_text())
-
-    if not text:
-        continue
 
     if (
         "/live-cricket-scores/" in href
         or "/live-cricket-scorecard/" in href
         or "/cricket-match-facts/" in href
-    ):
+    ) and text:
+
         full = href if href.startswith("http") else BASE_URL + href
         match_links.append((text, full))
 
-match_links = unique_list(match_links)
+match_links = unique_links(match_links)
 
 print("Matches Found:", len(match_links))
 
@@ -292,6 +262,7 @@ results = []
 for idx, (title, link) in enumerate(match_links, start=1):
 
     try:
+
         facts_url = (
             link.replace("/live-cricket-scores/", "/cricket-match-facts/")
                 .replace("/live-cricket-scorecard/", "/cricket-match-facts/")
@@ -324,9 +295,10 @@ for idx, (title, link) in enumerate(match_links, start=1):
             "source_url": facts_url
         }
 
-        for i in range(len(lines)-1):
+        for i in range(len(lines) - 1):
+
             key = lines[i].lower()
-            val = lines[i+1]
+            val = lines[i + 1]
 
             if key == "match":
                 row["match"] = val
@@ -373,6 +345,27 @@ for idx, (title, link) in enumerate(match_links, start=1):
         print("Skipped:", title, str(e))
 
 # =====================================================
+# REMOVE DUPLICATES
+# =====================================================
+
+clean_results = []
+seen = set()
+
+for row in results:
+
+    key = (
+        row["match"],
+        row["date_ist"],
+        row["time_ist"]
+    )
+
+    if key not in seen:
+        seen.add(key)
+        clean_results.append(row)
+
+results = clean_results
+
+# =====================================================
 # SORT
 # =====================================================
 
@@ -385,7 +378,6 @@ def sort_key(x):
     except:
         return datetime.max
 
-
 results.sort(key=sort_key)
 
 # =====================================================
@@ -395,4 +387,4 @@ results.sort(key=sort_key)
 with open("matches.json", "w", encoding="utf-8") as f:
     json.dump(results, f, indent=4, ensure_ascii=False)
 
-print("\nSaved matches.json successfully")
+print("Saved matches.json successfully")
