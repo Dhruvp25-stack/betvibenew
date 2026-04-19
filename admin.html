@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BetVibe Admin Panel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:#1565c0;--blue-mid:#1976d2;--blue-light:#42a5f5;--blue-dark:#0d47a1;
+  --accent:#ffd600;--green:#00c853;--red:#f44336;--orange:#ff9800;--purple:#7c4dff;
+  --bg:#080d16;--bg2:#0d1420;--bg3:#111b2d;--bg4:#162135;
+  --border:rgba(255,255,255,0.06);--border2:rgba(21,101,192,0.35);
+  --text:#dce8f5;--muted:#6a80a0;--dim:#2d3d55;
+  --r:8px;--r2:12px;
+  --sidebar:240px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+h1,h2,h3,h4{font-family:'Exo 2',sans-serif;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(21,101,192,0.1) 0%,transparent 60%),var(--bg);}
+.login-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:36px;width:100%;max-width:380px;position:relative;}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--accent));border-radius:var(--r2) var(--r2) 0 0;}
+.login-brand{text-align:center;margin-bottom:28px;}
+.login-icon{font-size:40px;margin-bottom:8px;}
+.login-title{font-family:'Exo 2',sans-serif;font-size:24px;font-weight:800;color:var(--text);}
+.login-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+.form-lbl{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;}
+.form-inp{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:11px 14px;border-radius:var(--r);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s;}
+.form-inp:focus{border-color:var(--blue-mid);}
+.form-grp{margin-bottom:14px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:var(--r);font-family:'Exo 2',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:all 0.15s;text-decoration:none;letter-spacing:0.2px;}
+.btn-primary{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-mid) 100%);color:#fff;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(21,101,192,0.3);}
+.btn-success{background:var(--green);color:#000;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-warn{background:var(--orange);color:#000;}
+.btn-outline{background:transparent;border:1px solid var(--blue-mid);color:var(--blue-light);}
+.btn-block{width:100%;}
+.btn-sm{padding:6px 14px;font-size:12px;}
+.btn-xs{padding:4px 10px;font-size:11px;}
+
+/* ADMIN LAYOUT */
+.admin-layout{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-brand{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sidebar-brand-icon{font-size:22px;}
+.sidebar-brand-text{font-family:'Exo 2',sans-serif;font-size:16px;font-weight:800;color:var(--blue-light);}
+.sidebar-brand-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:var(--muted);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;border:none;background:none;width:100%;text-align:left;font-family:'Inter',sans-serif;}
+.nav-item:hover{background:rgba(255,255,255,0.03);color:var(--text);}
+.nav-item.active{background:rgba(21,101,192,0.12);color:var(--blue-light);border-left-color:var(--blue-mid);}
+.nav-item span:first-child{width:18px;text-align:center;flex-shrink:0;}
+.nav-divider{height:1px;background:var(--border);margin:6px 12px;}
+.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);}
+.admin-name{font-size:12px;color:var(--muted);margin-bottom:8px;}
+
+/* MAIN CONTENT */
+.main-content{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:700;color:var(--text);}
+.topbar-right{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+.content-wrap{padding:24px;flex:1;}
+.page-title{font-family:'Exo 2',sans-serif;font-size:22px;font-weight:800;margin-bottom:20px;color:var(--text);}
+
+/* PANELS (sections) */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden;}
+.stat-box::after{content:attr(data-icon);position:absolute;right:12px;top:12px;font-size:24px;opacity:0.15;}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.stat-val{font-family:'Exo 2',sans-serif;font-size:26px;font-weight:800;color:var(--text);}
+.stat-sub{font-size:11px;color:var(--dim);margin-top:4px;}
+.stat-box.blue{border-color:rgba(21,101,192,0.3);}
+.stat-box.green{border-color:rgba(0,200,83,0.3);}
+.stat-box.red{border-color:rgba(244,67,54,0.3);}
+.stat-box.orange{border-color:rgba(255,152,0,0.3);}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.card-title{font-family:'Exo 2',sans-serif;font-size:16px;font-weight:700;color:var(--text);}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--bg3);border-radius:var(--r);padding:4px;margin-bottom:16px;}
+.tab{padding:7px 16px;border-radius:6px;font-size:13px;cursor:pointer;color:var(--muted);transition:all 0.15s;border:none;background:none;font-family:'Inter',sans-serif;flex:1;text-align:center;}
+.tab.active{background:var(--blue);color:#fff;font-weight:600;}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--bg3);padding:9px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.3px;}
+.badge-success{background:rgba(0,200,83,0.15);color:var(--green);}
+.badge-danger{background:rgba(244,67,54,0.15);color:var(--red);}
+.badge-warning{background:rgba(255,152,0,0.15);color:var(--orange);}
+.badge-info{background:rgba(21,101,192,0.15);color:var(--blue-light);}
+.badge-muted{background:rgba(106,128,160,0.1);color:var(--muted);}
+
+/* INFO ROW */
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.info-row:last-child{border-bottom:none;}
+.info-lbl{color:var(--muted);}
+
+/* ALERT */
+.alert{padding:10px 14px;border-radius:var(--r);font-size:12px;margin-bottom:14px;border:1px solid;}
+.alert-info{background:rgba(21,101,192,0.1);border-color:rgba(21,101,192,0.3);color:var(--blue-light);}
+.alert-warn{background:rgba(255,152,0,0.1);border-color:rgba(255,152,0,0.3);color:var(--orange);}
+.alert-success{background:rgba(0,200,83,0.1);border-color:rgba(0,200,83,0.3);color:var(--green);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border2);padding:14px 18px;border-radius:var(--r);font-size:13px;z-index:9999;min-width:250px;max-width:350px;box-shadow:0 8px 32px rgba(0,0,0,0.4);transform:translateY(120px);opacity:0;transition:all 0.3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-color:var(--green);}
+.toast.danger{border-color:var(--red);}
+.toast.warning{border-color:var(--orange);}
+
+/* FORM */
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+/* BANK CARD */
+.bank-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.bank-info .bank-name{font-weight:600;font-size:14px;color:var(--text);margin-bottom:4px;}
+.bank-info .bank-detail{font-size:12px;color:var(--muted);}
+
+/* UTILS */
+.hidden{display:none!important;}
+.flex{display:flex;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;}
+.gap-8{gap:8px;}
+.gap-12{gap:12px;}
+.mt-8{margin-top:8px;}
+.mt-12{margin-top:12px;}
+.mt-16{margin-top:16px;}
+.mb-8{margin-bottom:8px;}
+.mb-12{margin-bottom:12px;}
+.mb-16{margin-bottom:16px;}
+.mb-20{margin-bottom:20px;}
+.text-center{text-align:center;}
+.text-success{color:var(--green);}
+.text-danger{color:var(--red);}
+.text-warn{color:var(--orange);}
+.text-blue{color:var(--blue-light);}
+.text-accent{color:var(--accent);}
+.text-muted{color:var(--muted);}
+.fw-600{font-weight:600;}
+.fs-11{font-size:11px;}
+.fs-12{font-size:12px;}
+.fs-13{font-size:13px;}
+.sec-title{font-family:'Exo 2',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+
+/* FILE UPLOAD */
+.file-drop{border:2px dashed var(--border);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;position:relative;}
+.file-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.file-name{font-size:12px;color:var(--green);margin-top:6px;}
+
+/* TOGGLE */
+.toggle-wrap{display:flex;align-items:center;gap:10px;}
+input[type=checkbox].toggle{width:36px;height:20px;appearance:none;background:var(--dim);border-radius:10px;cursor:pointer;position:relative;transition:background 0.2s;}
+input[type=checkbox].toggle:checked{background:var(--blue-mid);}
+input[type=checkbox].toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left 0.2s;}
+input[type=checkbox].toggle:checked::after{left:18px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;}
+.modal-head{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
+.modal-close{cursor:pointer;color:var(--muted);background:none;border:none;font-size:18px;}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============================= ADMIN LOGIN ============================= -->
+<div class="view active" id="view-login">
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-icon">🛡️</div>
+      <div class="login-title">BetVibe Admin</div>
+      <div class="login-sub">Secure Management Portal</div>
+    </div>
+    <div class="form-grp"><label class="form-lbl">Admin Username</label><input type="text" id="admin-user" class="form-inp" placeholder="Enter admin username"></div>
+    <div class="form-grp"><label class="form-lbl">Admin Password</label><input type="password" id="admin-pass" class="form-inp" placeholder="Enter admin password"></div>
+    <button class="btn btn-primary btn-block" onclick="doAdminLogin()">Access Admin Panel</button>
+    <p class="text-center fs-12 text-muted mt-12">Default: admin / admin123</p>
+  </div>
+</div>
+</div>
+
+<!-- ============================= ADMIN PANEL ============================= -->
+<div class="view" id="view-admin">
+<div class="admin-layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <span class="sidebar-brand-icon">🛡️</span>
+    <div>
+      <div class="sidebar-brand-text">BetVibe</div>
+      <div class="sidebar-brand-sub">Admin Panel</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-item active" id="alink-dashboard" onclick="goPanel('dashboard')"><span>📊</span>Dashboard</button>
+    <button class="nav-item" id="alink-matches" onclick="goPanel('matches')"><span>🏏</span>Matches</button>
+    <div class="nav-divider"></div>
+    <button class="nav-item" id="alink-deposits" onclick="goPanel('deposits')"><span>💳</span>Deposits</button>
+    <button class="nav-item" id="alink-withdrawals" onclick="goPanel('withdrawals')"><span>🏦</span>Withdrawals</button>
+    <div class="nav-divider"></div>
+    <button class="nav-item" id="alink-bets" onclick="goPanel('bets')"><span>🎫</span>All Bets</button>
+    <button class="nav-item" id="alink-users" onclick="goPanel('users')"><span>👥</span>Users</button>
+    <div class="nav-divider"></div>
+    <button class="nav-item" id="alink-reports" onclick="goPanel('reports')"><span>📈</span>Reports</button>
+    <button class="nav-item" id="alink-tickets" onclick="goPanel('tickets')"><span>💬</span>Support Tickets</button>
+    <button class="nav-item" id="alink-settings" onclick="goPanel('settings')"><span>⚙️</span>Settings</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="admin-name">Logged in as Admin</div>
+    <button class="btn btn-outline btn-sm btn-block" onclick="doAdminLogout()">Logout</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-content">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div class="topbar-right">
+      <span><span class="live-dot"></span>Live System</span>
+      <span id="topbarTime"></span>
+    </div>
+  </div>
+  <div class="content-wrap">
+
+  <!-- ===== DASHBOARD ===== -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="stats-grid">
+      <div class="stat-box blue" data-icon="👥"><div class="stat-lbl">Total Users</div><div class="stat-val" id="adTotalUsers">0</div><div class="stat-sub">Registered accounts</div></div>
+      <div class="stat-box green" data-icon="💰"><div class="stat-lbl">Total Deposits</div><div class="stat-val text-success">₹<span id="adTotalDep">0</span></div><div class="stat-sub">Approved only</div></div>
+      <div class="stat-box red" data-icon="📤"><div class="stat-lbl">Total Withdrawals</div><div class="stat-val text-danger">₹<span id="adTotalWd">0</span></div><div class="stat-sub">Approved only</div></div>
+      <div class="stat-box orange" data-icon="📊"><div class="stat-lbl">Net Profit</div><div class="stat-val text-accent">₹<span id="adNetProfit">0</span></div><div class="stat-sub">Deposits - Withdrawals</div></div>
+    </div>
+    <div class="grid-4 mb-20">
+      <div class="stat-box" data-icon="⏳"><div class="stat-lbl">Pending Deposits</div><div class="stat-val text-warn" id="adPendingDep">0</div></div>
+      <div class="stat-box" data-icon="⏳"><div class="stat-lbl">Pending Withdrawals</div><div class="stat-val text-warn" id="adPendingWd">0</div></div>
+      <div class="stat-box" data-icon="🎫"><div class="stat-lbl">Total Bets</div><div class="stat-val" id="adTotalBets">0</div></div>
+      <div class="stat-box" data-icon="💬"><div class="stat-lbl">Open Tickets</div><div class="stat-val text-blue" id="adOpenTickets">0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">📋 Recent Activity</div></div>
+      <div id="adminRecentActivity" class="fs-13 text-muted">Loading...</div>
+    </div>
+  </div>
+
+  <!-- ===== MATCHES ===== -->
+  <div class="panel" id="panel-matches">
+    <div class="flex-between mb-16">
+      <div class="page-title" style="margin:0;">🏏 Cricket Matches</div>
+      <button class="btn btn-primary btn-sm" onclick="addDemoMatch()">+ Add Demo Match</button>
+    </div>
+
+    <!-- RUN SCRAPER CARD -->
+    <div class="card mb-16" style="border-color:rgba(0,200,83,0.35);">
+      <div class="card-header">
+        <div class="card-title" style="display:flex;align-items:center;gap:10px;">
+          🔄 Fetch Live Matches from Cricbuzz
+          <span id="scraperStatusBadge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(122,139,168,0.15);color:#6a80a0;">Never Run</span>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Runs <strong style="color:var(--text);">Match_details.py</strong> → scrapes Cricbuzz → saves <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;">matches.json</code>. Only matches within next 48 hours IST are shown to users for betting.</p>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-success" id="runScraperBtn" onclick="runScraper()">▶ Run Scraper Now</button>
+        <button class="btn btn-outline btn-sm" onclick="checkScraperStatus()">↻ Check Status</button>
+        <span id="scraperMsg" style="font-size:12px;color:var(--muted);"></span>
+      </div>
+      <div id="scraperLog" style="display:none;margin-top:12px;background:var(--bg3);padding:10px;border-radius:6px;font-size:11px;color:#4caf50;font-family:monospace;white-space:pre-wrap;max-height:80px;overflow:auto;"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;">
+        <span>Last fetch: <strong id="scraperLastRun" style="color:var(--text);">—</strong></span>
+        <span>Auto: every 30 min while server runs</span>
+      </div>
+    </div>
+
+    <div class="alert alert-info mb-16">Toss settlement runs automatically from the toss field in matches.json every 20s. Use the manual settle button per match if needed.</div>
+
+    <!-- Add Match -->
+    <div class="card mb-16">
+      <div class="sec-title">➕ Add Custom Match</div>
+      <div class="grid-3">
+        <div class="form-grp"><label class="form-lbl">Team 1</label><input type="text" id="addTeam1" class="form-inp" placeholder="e.g. India"></div>
+        <div class="form-grp"><label class="form-lbl">Team 2</label><input type="text" id="addTeam2" class="form-inp" placeholder="e.g. Australia"></div>
+        <div class="form-grp"><label class="form-lbl">League</label><input type="text" id="addLeague" class="form-inp" placeholder="e.g. IPL 2025"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-grp"><label class="form-lbl">Match Date & Time</label><input type="datetime-local" id="addMatchTime" class="form-inp"></div>
+        <div class="form-grp" style="display:flex;align-items:flex-end;"><button class="btn btn-primary btn-block" onclick="addCustomMatch()">Add Match</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table><thead><tr><th>Match</th><th>Time</th><th>Status</th><th>Bets</th><th>Toss Info</th><th>Winner</th><th>Actions</th></tr></thead>
+        <tbody id="adminMatchTable"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DEPOSITS ===== -->
+  <div class="panel" id="panel-deposits">
+    <div class="page-title">💳 Deposit Requests</div>
+    <div class="tabs">
+      <button class="tab active" onclick="adminDepTab('pending',this)">Pending</button>
+      <button class="tab" onclick="adminDepTab('approved',this)">Approved</button>
+      <button class="tab" onclick="adminDepTab('rejected',this)">Rejected</button>
+    </div>
+    <div class="card"><div class="table-wrap">
+      <table><thead><tr><th>User</th><th>Amount</th><th>UTR</th><th>Screenshot</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody id="adminDepTable"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- ===== WITHDRAWALS ===== -->
+  <div class="panel" id="panel-withdrawals">
+    <div class="page-title">🏦 Withdrawal Requests</div>
+    <div class="tabs">
+      <button class="tab active" onclick="adminWdTab('pending',this)">Pending</button>
+      <button class="tab" onclick="adminWdTab('approved',this)">Approved</button>
+      <button class="tab" onclick="adminWdTab('rejected',this)">Rejected</button>
+    </div>
+    <div class="card"><div class="table-wrap">
+      <table><thead><tr><th>User</th><th>Amount</th><th>Bank Details</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="adminWdTable"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- ===== BETS ===== -->
+  <div class="panel" id="panel-bets">
+    <div class="page-title">🎫 All Bets</div>
+    <div class="card mb-16">
+      <div class="card-header"><div class="card-title">🤖 Auto-Settlement Logs</div></div>
+      <div id="settleLogs" class="fs-12 text-muted">No logs yet.</div>
+    </div>
+    <div class="card"><div class="table-wrap">
+      <table><thead><tr><th>User</th><th>Match</th><th>Team</th><th>Amount</th><th>Odds</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody id="adminBetsTable"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- ===== USERS ===== -->
+  <div class="panel" id="panel-users">
+    <div class="page-title">👥 Users</div>
+    <div class="flex gap-8 mb-16">
+      <input type="text" id="userSearch" class="form-inp" placeholder="Search by username or phone..." style="flex:1;" oninput="renderAdminUsers()">
+    </div>
+    <div class="card"><div class="table-wrap">
+      <table><thead><tr><th>Username</th><th>Phone</th><th>Balance</th><th>Wagered</th><th>Total Dep.</th><th>VIP</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+      <tbody id="adminUsersTable"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- ===== REPORTS ===== -->
+  <div class="panel" id="panel-reports">
+    <div class="page-title">📈 Reports</div>
+    <div class="grid-4 mb-20">
+      <div class="stat-box" data-icon="🏆"><div class="stat-lbl">Total Won (Users)</div><div class="stat-val text-success">🪙<span id="repTotalWon">0</span></div></div>
+      <div class="stat-box" data-icon="🎫"><div class="stat-lbl">Bets Settled</div><div class="stat-val" id="repBetsSettled">0</div></div>
+      <div class="stat-box" data-icon="💵"><div class="stat-lbl">Platform Revenue</div><div class="stat-val text-accent">₹<span id="repRevenue">0</span></div><div class="stat-sub">5% margin</div></div>
+      <div class="stat-box" data-icon="📅"><div class="stat-lbl">Active Users</div><div class="stat-val text-blue" id="repActiveUsers">0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">📋 Admin Action Log</div></div>
+      <div id="adminActionLog" class="fs-12"></div>
+    </div>
+  </div>
+
+  <!-- ===== TICKETS ===== -->
+  <div class="panel" id="panel-tickets">
+    <div class="page-title">💬 Support Tickets</div>
+    <div class="tabs">
+      <button class="tab active" onclick="adminTicketTab('open',this)">Open</button>
+      <button class="tab" onclick="adminTicketTab('resolved',this)">Resolved</button>
+    </div>
+    <div class="card"><div class="table-wrap">
+      <table><thead><tr><th>User</th><th>Subject</th><th>Message</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="adminTicketsTable"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- ===== SETTINGS ===== -->
+  <div class="panel" id="panel-settings">
+    <div class="page-title">⚙️ Settings</div>
+    <div class="grid-2">
+      <div>
+        <!-- Support Links -->
+        <div class="card mb-16">
+          <div class="sec-title">🔗 Support Links</div>
+          <div class="form-grp"><label class="form-lbl">WhatsApp Number</label><input type="text" id="setWhatsapp" class="form-inp" placeholder="+91 9999999999"></div>
+          <div class="form-grp"><label class="form-lbl">Telegram Username</label><input type="text" id="setTelegram" class="form-inp" placeholder="@yourusername"></div>
+          <div class="form-grp"><label class="form-lbl">Custom Link</label><input type="text" id="setCustomSupport" class="form-inp" placeholder="https://..."></div>
+          <button class="btn btn-primary btn-block" onclick="saveSupportLinks()">Save Links</button>
+        </div>
+
+        <!-- Bet Limits -->
+        <div class="card mb-16">
+          <div class="sec-title">🎯 Bet Limits</div>
+          <div class="input-row">
+            <div class="form-grp"><label class="form-lbl">Min Bet (🪙)</label><input type="number" id="setBetMin" class="form-inp"></div>
+            <div class="form-grp"><label class="form-lbl">Max Bet (🪙)</label><input type="number" id="setBetMax" class="form-inp"></div>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="saveBetLimits()">Save Limits</button>
+        </div>
+
+        <!-- Maintenance -->
+        <div class="card mb-16">
+          <div class="sec-title">🔧 Maintenance Mode</div>
+          <div class="info-row">
+            <span class="info-lbl">Enable Maintenance</span>
+            <div class="toggle-wrap">
+              <input type="checkbox" class="toggle" id="maintenanceToggle" onchange="toggleMaintenance()">
+              <span class="fs-12" id="maintenanceLabel">Off</span>
+            </div>
+          </div>
+          <p class="fs-12 text-muted mt-8">Locks users out of the website while you perform updates.</p>
+        </div>
+
+        <!-- Admin Security -->
+        <div class="card">
+          <div class="sec-title">🔒 Admin Security</div>
+          <div class="form-grp"><label class="form-lbl">New Admin Password</label><input type="password" id="adminNewPass" class="form-inp" placeholder="New password"></div>
+          <button class="btn btn-outline btn-block" onclick="changeAdminPass()">Update Password</button>
+          <div class="info-row mt-12"><span class="info-lbl">Last Login</span><span id="adminLastLogin" class="fs-12 text-muted">-</span></div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Bank Accounts -->
+        <div class="card mb-16">
+          <div class="sec-title">🏦 Bank Accounts</div>
+          <div id="adminBankList" class="mb-12"></div>
+          <div class="form-grp"><label class="form-lbl">Account Holder Name</label><input type="text" id="newBankName" class="form-inp"></div>
+          <div class="input-row">
+            <div class="form-grp"><label class="form-lbl">Account Number</label><input type="text" id="newBankNum" class="form-inp"></div>
+            <div class="form-grp"><label class="form-lbl">IFSC Code</label><input type="text" id="newBankIfsc" class="form-inp"></div>
+          </div>
+          <div class="input-row">
+            <div class="form-grp"><label class="form-lbl">Bank Name</label><input type="text" id="newBankBank" class="form-inp"></div>
+            <div class="form-grp"><label class="form-lbl">UPI ID (Optional)</label><input type="text" id="newBankUpi" class="form-inp"></div>
+          </div>
+          <div class="form-grp"><label class="form-lbl">QR Code Image</label>
+            <div class="file-drop"><input type="file" accept="image/*" onchange="handleQRUpload(this)"><div class="fs-12 text-muted">Upload QR code</div><div class="file-name" id="qrFileName"></div></div>
+          </div>
+          <button class="btn btn-success btn-block" onclick="addBankAccount()">Add Bank Account</button>
+        </div>
+
+        <!-- Deposit Coupons -->
+        <div class="card mb-16">
+          <div class="sec-title">🎁 Deposit Coupons</div>
+          <div id="couponList" class="mb-12"></div>
+          <div class="grid-3">
+            <div class="form-grp"><label class="form-lbl">Deposit ₹</label><input type="number" id="newCouponAmt" class="form-inp"></div>
+            <div class="form-grp"><label class="form-lbl">Bonus 🪙</label><input type="number" id="newCouponBonus" class="form-inp"></div>
+            <div class="form-grp" style="display:flex;align-items:flex-end;"><button class="btn btn-success btn-block btn-sm" onclick="addCoupon()">Add</button></div>
+          </div>
+        </div>
+
+        <!-- Add Coins to User -->
+        <div class="card mb-16">
+          <div class="sec-title">🎁 Add Coins to User</div>
+          <div class="form-grp"><label class="form-lbl">Username</label><input type="text" id="bonusUser" class="form-inp"></div>
+          <div class="form-grp"><label class="form-lbl">Amount</label><input type="number" id="bonusAmount" class="form-inp"></div>
+          <button class="btn btn-success btn-block" onclick="addBonusToUser()">Add Coins</button>
+        </div>
+
+        <!-- Promo Codes -->
+        <div class="card">
+          <div class="sec-title">🎟️ Promo Codes</div>
+          <div id="promoCodeList" class="mb-12"></div>
+          <div class="input-row">
+            <div class="form-grp"><label class="form-lbl">Code</label><input type="text" id="newPromoCode" class="form-inp" placeholder="CODE" style="text-transform:uppercase;"></div>
+            <div class="form-grp"><label class="form-lbl">Bonus 🪙</label><input type="number" id="newPromoBonus" class="form-inp"></div>
+          </div>
+          <button class="btn btn-success btn-block btn-sm" onclick="addPromoCode()">Add Code</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- content-wrap -->
+</div><!-- main-content -->
+</div><!-- admin-layout -->
+</div><!-- view-admin -->
+
+<script>
+// ─────────────────────────────────────────────────────────
+// BACKEND CONFIG — update this when deploying to Netlify
+// Set to your Railway/Render backend URL.
+// Example: const BACKEND_URL = 'https://betvibe-backend.up.railway.app';
+const BACKEND_URL = 'web-production-e046e.up.railway.app';
+// Must match ADMIN_KEY in server.py
+const ADMIN_KEY = 'betvibe@2025';
+function apiUrl(path) {
+  return BACKEND_URL ? BACKEND_URL.replace(/\/$/, '') + path : path;
+}
+// ─────────────────────────────────────────────────────────
+
+// =====================================================================
+// DATABASE — same storage as main website (shared localStorage)
+// =====================================================================
+const DB = {
+  get: k => { try { return JSON.parse(localStorage.getItem('bv_'+k)); } catch(e) { return null; } },
+  set: (k,v) => localStorage.setItem('bv_'+k, JSON.stringify(v)),
+  del: k => localStorage.removeItem('bv_'+k)
+};
+
+function initDB() {
+  if (!DB.get('users')) DB.set('users', []);
+  if (!DB.get('bets')) DB.set('bets', []);
+  if (!DB.get('deposits')) DB.set('deposits', []);
+  if (!DB.get('withdrawals')) DB.set('withdrawals', []);
+  if (!DB.get('matches')) DB.set('matches', []);
+  if (!DB.get('bankAccounts')) DB.set('bankAccounts', []);
+  if (!DB.get('promoCodes')) DB.set('promoCodes', { 'BET100':100, 'WELCOME50':50, 'LUCKY200':200 });
+  if (!DB.get('adminLog')) DB.set('adminLog', []);
+  if (!DB.get('tickets')) DB.set('tickets', []);
+  if (!DB.get('notifications')) DB.set('notifications', []);
+  if (!DB.get('settleLogs')) DB.set('settleLogs', []);
+  if (!DB.get('supportLinks')) DB.set('supportLinks', { whatsapp:'', telegram:'', custom:'' });
+  if (!DB.get('betLimits')) DB.set('betLimits', { min:100, max:10000 });
+  if (!DB.get('depositCoupons')) DB.set('depositCoupons', [{ amount:1000, bonus:100 },{ amount:5000, bonus:600 }]);
+  if (!DB.get('maintenance')) DB.set('maintenance', false);
+  if (!DB.get('qrData')) DB.set('qrData', {});
+}
+
+// STATE
+let adminDepFilter = 'pending';
+let adminWdFilter = 'pending';
+let adminTicketFilter = 'open';
+let qrDataURL = null;
+
+// =====================================================================
+// INIT
+// =====================================================================
+initDB();
+showView('view-login');
+
+// Clock
+setInterval(() => {
+  const el = document.getElementById('topbarTime');
+  if (el) el.textContent = new Date().toLocaleTimeString();
+}, 1000);
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show '+type;
+  setTimeout(()=>t.className='toast', 3500);
+}
+
+function addNotification(userId, title, body) {
+  const notifs = DB.get('notifications')||[];
+  notifs.unshift({ id:'n'+Date.now(), userId, title, body, time:new Date().toLocaleString(), read:false });
+  DB.set('notifications', notifs.slice(0,50));
+}
+
+function logAdminAction(action) {
+  const log = DB.get('adminLog')||[];
+  log.unshift({ action, time:new Date().toLocaleString() });
+  DB.set('adminLog', log.slice(0,100));
+}
+
+// =====================================================================
+// LOGIN
+// =====================================================================
+function doAdminLogin() {
+  const u = document.getElementById('admin-user').value;
+  const p = document.getElementById('admin-pass').value;
+  if (u==='admin' && p==='admin123') {
+    document.getElementById('adminLastLogin').textContent = new Date().toLocaleString();
+    showView('view-admin');
+    goPanel('dashboard');
+  } else {
+    toast('Invalid admin credentials', 'danger');
+  }
+}
+
+document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') doAdminLogin(); });
+
+function doAdminLogout() { showView('view-login'); }
+
+// =====================================================================
+// PANEL NAVIGATION
+// =====================================================================
+const panelTitles = {
+  dashboard:'📊 Dashboard', matches:'🏏 Matches', deposits:'💳 Deposits',
+  withdrawals:'🏦 Withdrawals', bets:'🎫 All Bets', users:'👥 Users',
+  reports:'📈 Reports', tickets:'💬 Support Tickets', settings:'⚙️ Settings'
+};
+
+function goPanel(name) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.getElementById('alink-'+name).classList.add('active');
+  document.getElementById('topbarTitle').textContent = panelTitles[name]||name;
+  const loaders = { dashboard:renderDashboard, matches:renderMatches, deposits:()=>renderDeposits('pending'), withdrawals:()=>renderWithdrawals('pending'), bets:renderBets, users:renderUsers, reports:renderReports, tickets:()=>renderTickets('open'), settings:loadSettings };
+  if (loaders[name]) loaders[name]();
+}
+
+// =====================================================================
+// DASHBOARD
+// =====================================================================
+function renderDashboard() {
+  const users = DB.get('users')||[];
+  const deposits = DB.get('deposits')||[];
+  const withdrawals = DB.get('withdrawals')||[];
+  const bets = DB.get('bets')||[];
+  const tickets = DB.get('tickets')||[];
+  const totalDep = deposits.filter(d=>d.status==='approved').reduce((s,d)=>s+d.amount,0);
+  const totalWd = withdrawals.filter(w=>w.status==='approved').reduce((s,w)=>s+w.amount,0);
+  document.getElementById('adTotalUsers').textContent = users.length;
+  document.getElementById('adTotalDep').textContent = totalDep.toFixed(0);
+  document.getElementById('adTotalWd').textContent = totalWd.toFixed(0);
+  document.getElementById('adNetProfit').textContent = (totalDep-totalWd).toFixed(0);
+  document.getElementById('adPendingDep').textContent = deposits.filter(d=>d.status==='pending').length;
+  document.getElementById('adPendingWd').textContent = withdrawals.filter(w=>w.status==='pending').length;
+  document.getElementById('adTotalBets').textContent = bets.length;
+  document.getElementById('adOpenTickets').textContent = tickets.filter(t=>t.status==='open').length;
+  const activity = [
+    ...deposits.slice(-4).reverse().map(d=>`<div class="info-row"><span class="info-lbl">${d.username}</span><span class="badge badge-warning">Deposit ₹${d.amount}</span><span class="fs-11 text-muted">${d.date}</span></div>`),
+    ...withdrawals.slice(-4).reverse().map(w=>`<div class="info-row"><span class="info-lbl">${w.username}</span><span class="badge badge-info">Withdraw ₹${w.amount}</span><span class="fs-11 text-muted">${w.date}</span></div>`)
+  ];
+  document.getElementById('adminRecentActivity').innerHTML = activity.join('')||'<span class="text-muted">No recent activity</span>';
+}
+
+// =====================================================================
+// SCRAPER — calls Flask /api/run-scraper then polls status
+// =====================================================================
+let scraperPollInterval = null;
+
+async function runScraper() {
+  const btn = document.getElementById('runScraperBtn');
+  const msg = document.getElementById('scraperMsg');
+  const badge = document.getElementById('scraperStatusBadge');
+  btn.disabled = true;
+  btn.textContent = '⏳ Starting...';
+  msg.textContent = 'Sending request to server...';
+
+  try {
+    const res = await fetch(apiUrl('/api/run-scraper'), {
+      method: 'POST',
+      headers: BACKEND_URL ? { 'X-Admin-Key': ADMIN_KEY } : {}
+    });
+    const json = await res.json();
+    if (json.ok) {
+      msg.textContent = json.msg;
+      badge.textContent = '🔄 Running';
+      badge.style.background = 'rgba(255,152,0,0.15)';
+      badge.style.color = '#ff9800';
+      btn.textContent = '⏳ Running...';
+      // Poll every 3 seconds
+      scraperPollInterval = setInterval(checkScraperStatus, 3000);
+    } else {
+      msg.textContent = '⚠️ ' + json.msg;
+      btn.disabled = false;
+      btn.textContent = '▶ Run Scraper Now';
+    }
+  } catch (e) {
+    msg.textContent = '❌ Cannot reach server. Is server.py running on port 5000?';
+    btn.disabled = false;
+    btn.textContent = '▶ Run Scraper Now';
+  }
+}
+
+async function checkScraperStatus() {
+  try {
+    const res = await fetch(apiUrl('/api/scraper-status'), {
+      headers: BACKEND_URL ? { 'X-Admin-Key': ADMIN_KEY } : {}
+    });
+    const json = await res.json();
+    const btn = document.getElementById('runScraperBtn');
+    const msg = document.getElementById('scraperMsg');
+    const badge = document.getElementById('scraperStatusBadge');
+    const logEl = document.getElementById('scraperLog');
+    const lastRun = document.getElementById('scraperLastRun');
+
+    if (json.last_run) lastRun.textContent = json.last_run;
+
+    if (json.running) {
+      badge.textContent = '🔄 Running';
+      badge.style.background = 'rgba(255,152,0,0.15)';
+      badge.style.color = '#ff9800';
+      btn.textContent = '⏳ Running...';
+      btn.disabled = true;
+      msg.textContent = 'Scraping Cricbuzz... please wait (may take ~60 seconds)';
+    } else {
+      // Done
+      clearInterval(scraperPollInterval);
+      scraperPollInterval = null;
+      btn.disabled = false;
+      btn.textContent = '▶ Run Scraper Now';
+
+      if (json.error) {
+        badge.textContent = '❌ Error';
+        badge.style.background = 'rgba(244,67,54,0.15)';
+        badge.style.color = '#f44336';
+        msg.textContent = 'Scraper finished with errors.';
+        logEl.textContent = json.error;
+        logEl.style.display = 'block';
+        logEl.style.color = '#f44336';
+      } else if (json.last_run) {
+        badge.textContent = '✅ Done';
+        badge.style.background = 'rgba(0,200,83,0.15)';
+        badge.style.color = '#00c853';
+        msg.textContent = '✅ Matches fetched! Reloading...';
+        if (json.last_result) {
+          logEl.textContent = json.last_result;
+          logEl.style.display = 'block';
+          logEl.style.color = '#4caf50';
+        }
+        // Re-load matches from JSON and update localStorage
+        setTimeout(async () => {
+          await reloadMatchesFromJSON();
+          msg.textContent = '✅ Done! Matches refreshed.';
+          renderMatches();
+          toast('✅ Matches updated from Cricbuzz!', 'success');
+          logAdminAction('Ran scraper — matches.json updated');
+        }, 1500);
+      }
+    }
+  } catch(e) {
+    // server unreachable
+  }
+}
+
+async function reloadMatchesFromJSON() {
+  try {
+    const res = await fetch(apiUrl('/matches.json') + '?t=' + Date.now());
+    const raw = await res.json();
+
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const now = Date.now();
+    const nowIST = now + IST_OFFSET;
+    const cutoffIST = nowIST + 48 * 60 * 60 * 1000;
+
+    const existing = DB.get('matches') || [];
+    const converted = raw.map((m, idx) => {
+      const matchStr = m.match || m.match_link_text || '';
+      let team1 = 'Team A', team2 = 'Team B';
+      const vsMatch = matchStr.match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i) ||
+                      (m.match_link_text||'').match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i);
+      if (vsMatch) {
+        team1 = vsMatch[1].trim();
+        team2 = vsMatch[2].trim().split(/[\-•]/)[0].trim();
+      }
+
+      let tossResult = null;
+      if (m.toss && m.toss !== 'Toss not announced') {
+        const tw = m.toss.match(/^([^w]+)\s+won the toss/i);
+        if (tw) {
+          const winner = tw[1].trim();
+          if (winner.toLowerCase().includes(team1.toLowerCase()) ||
+              team1.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w) && w.length > 2))
+            tossResult = team1;
+          else if (winner.toLowerCase().includes(team2.toLowerCase()) ||
+              team2.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w) && w.length > 2))
+            tossResult = team2;
+          else tossResult = winner;
+        }
+      }
+
+      let matchTimestamp = now + (idx + 1) * 3 * 60 * 60 * 1000;
+      if (m.date && m.time) {
+        try {
+          const timeStr = m.time.split(',')[0].replace(' LOCAL','').trim();
+          const dateStr = m.date === 'Today' ? new Date().toDateString() : m.date;
+          const parsed = new Date(dateStr + ' ' + timeStr);
+          if (!isNaN(parsed)) matchTimestamp = parsed.getTime();
+        } catch(e) {}
+      }
+
+      const matchIST = matchTimestamp + IST_OFFSET;
+      if (matchIST > cutoffIST && !tossResult) return null; // outside 48h window
+
+      const old = existing.find(e => e.id === 'm_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12));
+      const status = tossResult ? 'completed' : matchTimestamp < now ? 'live' : 'upcoming';
+      const marketOpen = !tossResult && status === 'upcoming' && (matchTimestamp - now) > 30 * 60 * 1000;
+
+      // If newly settled, auto-settle bets
+      if (tossResult && old && !old.tossResult) {
+        adminSettleTossQuiet('m_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12), tossResult, team1, team2);
+      }
+
+      return {
+        id: 'm_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12),
+        team1, team2, flag1:'🏏', flag2:'🏏',
+        league: m.series || 'Cricket', series: m.series || '',
+        time: matchTimestamp, status, tossResult, toss: m.toss || '',
+        totalBets: old ? (old.totalBets || 0) : 0,
+        marketOpen,
+        venue: m.venue || m.stadium || '', stadium: m.stadium || '',
+        city: m.city || '', capacity: m.capacity || '',
+        ends: m.ends || '', umpires: m.umpires || '',
+        referee: m.referee || '', date: m.date || '', matchTime: m.time || ''
+      };
+    }).filter(Boolean);
+
+    DB.set('matches', converted);
+    return converted;
+  } catch(e) { return []; }
+}
+
+function adminSettleTossQuiet(matchId, winner, team1, team2) {
+  const bets = DB.get('bets') || [];
+  const users = DB.get('users') || [];
+  let settled = 0;
+  bets.filter(b => b.matchId === matchId && b.status === 'pending').forEach(b => {
+    settled++;
+    b.status = b.team === winner ? 'won' : 'lost';
+    if (b.status === 'won') {
+      const user = users.find(u => u.id === b.userId);
+      if (user) { user.balance += b.potential; user.totalWon = (user.totalWon||0) + (b.potential - b.amount); }
+      addNotification(b.userId, '🎉 You Won!', `Bet on ${b.team} won! 🪙${b.potential} credited.`);
+    } else {
+      addNotification(b.userId, '😔 Bet Lost', `Bet on ${b.team} lost. Better luck next time!`);
+    }
+  });
+  if (settled > 0) {
+    DB.set('bets', bets); DB.set('users', users);
+    const logs = DB.get('settleLogs') || [];
+    logs.unshift({ match: team1 + ' vs ' + team2, winner, settled, time: new Date().toLocaleString() });
+    DB.set('settleLogs', logs.slice(0,20));
+  }
+}
+
+// Auto-refresh matches from JSON every 30 seconds in admin
+setInterval(async () => {
+  const data = await reloadMatchesFromJSON();
+  if (data && data.length) renderMatches();
+}, 30000);
+
+// On load, also check scraper status
+window.addEventListener('load', () => { checkScraperStatus(); reloadMatchesFromJSON().then(()=>renderMatches()); });
+
+// =====================================================================
+// MATCHES
+// =====================================================================
+function renderMatches() {
+  const matches = DB.get('matches')||[];
+  const body = document.getElementById('adminMatchTable');
+  body.innerHTML = matches.length ? matches.map(m => `<tr>
+    <td>
+      <strong>${m.team1} vs ${m.team2}</strong>
+      <br><span class="text-muted fs-11">${m.league||m.series||''}</span>
+      ${m.venue ? `<br><span style="font-size:10px;color:var(--dim);">📍 ${m.city||m.venue}</span>` : ''}
+    </td>
+    <td class="fs-12">${new Date(m.time).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+    <td><span class="badge badge-${m.status==='live'?'danger':m.status==='upcoming'?'info':m.status==='completed'?'success':'muted'}">${m.status}</span></td>
+    <td>${m.totalBets||0}</td>
+    <td>${m.toss ? `<div style="font-size:11px;color:var(--muted);max-width:160px;">${m.toss}</div>` : '—'}</td>
+    <td>${m.tossResult ? `<span class="badge badge-success">🏏 ${m.tossResult}</span>` : '—'}</td>
+    <td style="white-space:nowrap;">
+      ${!m.tossResult ? `
+        <button class="btn btn-success btn-xs" onclick="adminSettleToss('${m.id}','${m.team1}')">✓ ${m.team1}</button>
+        <button class="btn btn-xs mt-4" style="background:var(--blue-mid);color:#fff;" onclick="adminSettleToss('${m.id}','${m.team2}')">✓ ${m.team2}</button>
+      ` : '<span class="badge badge-success">Settled</span>'}
+      <button class="btn btn-warn btn-xs mt-4" onclick="suspendMarket('${m.id}')">Suspend</button>
+      <button class="btn btn-danger btn-xs mt-4" onclick="deleteMatch('${m.id}')">Del</button>
+    </td>
+  </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No matches. Click "Run Scraper Now" to fetch from Cricbuzz.</td></tr>';
+}
+
+function adminSettleToss(matchId, winner) {
+  if (!confirm(`Confirm: ${winner} won the toss?`)) return;
+  const matches = DB.get('matches');
+  const match = matches.find(m=>m.id===matchId);
+  if (!match) return;
+  match.tossResult = winner;
+  match.status = 'completed';
+  match.marketOpen = false;
+  DB.set('matches', matches);
+
+  const bets = DB.get('bets');
+  const users = DB.get('users');
+  let settled = 0;
+  bets.filter(b=>b.matchId===matchId && b.status==='pending').forEach(b => {
+    settled++;
+    if (b.team===winner) {
+      b.status = 'won';
+      const user = users.find(u=>u.id===b.userId);
+      if (user) { user.balance+=b.potential; user.totalWon=(user.totalWon||0)+(b.potential-b.amount); }
+      addNotification(b.userId,'🎉 You Won!',`Bet on ${b.team} for ${b.matchName} won! 🪙${b.potential} credited.`);
+    } else {
+      b.status = 'lost';
+      addNotification(b.userId,'😔 Bet Lost',`Bet on ${b.team} for ${b.matchName} lost.`);
+    }
+  });
+  DB.set('bets', bets); DB.set('users', users);
+
+  const logs = DB.get('settleLogs')||[];
+  logs.unshift({ match:`${match.team1} vs ${match.team2}`, winner, settled, time:new Date().toLocaleString() });
+  DB.set('settleLogs', logs.slice(0,20));
+  logAdminAction(`Settled toss for ${match.team1} vs ${match.team2}: Winner = ${winner} | ${settled} bets settled`);
+  toast(`✅ Toss settled! ${winner} won. ${settled} bets processed.`, 'success');
+  renderMatches();
+}
+
+function suspendMarket(matchId) {
+  const matches = DB.get('matches');
+  const m = matches.find(x=>x.id===matchId);
+  m.marketOpen = false;
+  DB.set('matches', matches);
+  logAdminAction(`Suspended market for match ${matchId}`);
+  toast('Market suspended', 'warning');
+  renderMatches();
+}
+
+function deleteMatch(matchId) {
+  if (!confirm('Delete this match?')) return;
+  DB.set('matches', (DB.get('matches')||[]).filter(m=>m.id!==matchId));
+  logAdminAction(`Deleted match ${matchId}`);
+  toast('Match deleted', 'danger');
+  renderMatches();
+}
+
+function addDemoMatch() {
+  const teams = [['Kenya','Zimbabwe','🇰🇪','🇿🇼'],['Nepal','UAE','🇳🇵','🇦🇪'],['Ireland','Scotland','🇮🇪','🏴󠁧󠁢󠁳󠁣󠁴󠁿']];
+  const t = teams[Math.floor(Math.random()*teams.length)];
+  const matches = DB.get('matches')||[];
+  matches.push({ id:'m'+Date.now(), team1:t[0], team2:t[1], flag1:t[2], flag2:t[3], league:'ICC Development League', time:Date.now()+3*60*60*1000, status:'upcoming', tossResult:null, totalBets:0, marketOpen:true });
+  DB.set('matches', matches);
+  logAdminAction(`Added demo match: ${t[0]} vs ${t[1]}`);
+  toast('Demo match added!', 'success');
+  renderMatches();
+}
+
+function addCustomMatch() {
+  const team1 = document.getElementById('addTeam1').value.trim();
+  const team2 = document.getElementById('addTeam2').value.trim();
+  const league = document.getElementById('addLeague').value.trim();
+  const timeVal = document.getElementById('addMatchTime').value;
+  if (!team1 || !team2 || !timeVal) return toast('Fill all required fields', 'danger');
+  const matchTime = new Date(timeVal).getTime();
+  if (matchTime - Date.now() < 30*60*1000) return toast('Match must be at least 30 mins in the future', 'danger');
+  const matches = DB.get('matches')||[];
+  matches.push({ id:'m'+Date.now(), team1, team2, flag1:'🏏', flag2:'🏏', league:league||'Cricket Match', time:matchTime, status:'upcoming', tossResult:null, totalBets:0, marketOpen:true });
+  DB.set('matches', matches);
+  logAdminAction(`Added custom match: ${team1} vs ${team2}`);
+  toast(`${team1} vs ${team2} added!`, 'success');
+  renderMatches();
+  ['addTeam1','addTeam2','addLeague','addMatchTime'].forEach(id=>document.getElementById(id).value='');
+}
+
+// =====================================================================
+// DEPOSITS
+// =====================================================================
+function adminDepTab(filter, el) {
+  adminDepFilter = filter;
+  document.querySelectorAll('#panel-deposits .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderDeposits(filter);
+}
+
+function renderDeposits(filter) {
+  const deposits = (DB.get('deposits')||[]).filter(d=>d.status===filter);
+  document.getElementById('adminDepTable').innerHTML = deposits.length ? deposits.map(d=>`<tr>
+    <td><strong>${d.username}</strong></td>
+    <td class="text-success fw-600">₹${d.amount}${d.couponBonus?` <span class="badge badge-success">+🪙${d.couponBonus}</span>`:''}</td>
+    <td class="fs-12">${d.utr}</td>
+    <td class="fs-12">${d.screenshot||'N/A'}</td>
+    <td class="fs-12">${d.date}</td>
+    <td>${filter==='pending'?`<button class="btn btn-success btn-xs" onclick="approveDeposit('${d.id}')">✓ Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectDeposit('${d.id}')">✗ Reject</button>`:`<span class="badge badge-${filter==='approved'?'success':'danger'}">${filter}</span>`}</td>
+  </tr>`).join('') : `<tr><td colspan="6" class="text-center text-muted">No ${filter} deposits</td></tr>`;
+}
+
+function approveDeposit(id) {
+  const deposits = DB.get('deposits');
+  const dep = deposits.find(d=>d.id===id);
+  dep.status = 'approved';
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===dep.userId);
+  if (user) { user.balance+=dep.amount; user.totalDeposited=(user.totalDeposited||0)+dep.amount; if(dep.couponBonus) user.bonusBalance=(user.bonusBalance||0)+dep.couponBonus; }
+  DB.set('deposits', deposits); DB.set('users', users);
+  addNotification(dep.userId,'✅ Deposit Approved!',`Your deposit of ₹${dep.amount} has been credited.${dep.couponBonus?` +🪙${dep.couponBonus} bonus!`:''}`);
+  logAdminAction(`Approved deposit ₹${dep.amount} for ${dep.username}`);
+  toast(`Deposit approved! ₹${dep.amount} → ${dep.username}`, 'success');
+  renderDeposits('pending');
+  renderDashboard();
+}
+
+function rejectDeposit(id) {
+  const deposits = DB.get('deposits');
+  const dep = deposits.find(d=>d.id===id);
+  dep.status = 'rejected';
+  DB.set('deposits', deposits);
+  addNotification(dep.userId,'❌ Deposit Rejected',`Your deposit of ₹${dep.amount} was rejected. Contact support.`);
+  logAdminAction(`Rejected deposit ID ${id}`);
+  toast('Deposit rejected', 'danger');
+  renderDeposits('pending');
+}
+
+// =====================================================================
+// WITHDRAWALS
+// =====================================================================
+function adminWdTab(filter, el) {
+  adminWdFilter = filter;
+  document.querySelectorAll('#panel-withdrawals .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderWithdrawals(filter);
+}
+
+function renderWithdrawals(filter) {
+  const wds = (DB.get('withdrawals')||[]).filter(w=>w.status===filter);
+  document.getElementById('adminWdTable').innerHTML = wds.length ? wds.map(w=>`<tr>
+    <td><strong>${w.username}</strong></td>
+    <td class="text-danger fw-600">₹${w.amount}</td>
+    <td class="fs-12">${w.name||''}<br>${w.accNum||''}<br>${w.ifsc||''}<br>${w.bank||''}</td>
+    <td class="fs-12">${w.date}</td>
+    <td><span class="badge badge-${w.status==='approved'?'success':w.status==='rejected'?'danger':'warning'}">${w.status}</span></td>
+    <td>${filter==='pending'?`<button class="btn btn-success btn-xs" onclick="approveWd('${w.id}')">✓ Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectWd('${w.id}')">✗ Reject</button>`:'—'}</td>
+  </tr>`).join('') : `<tr><td colspan="6" class="text-center text-muted">No ${filter} withdrawals</td></tr>`;
+}
+
+function approveWd(id) {
+  const wds = DB.get('withdrawals');
+  const wd = wds.find(w=>w.id===id);
+  wd.status = 'approved';
+  DB.set('withdrawals', wds);
+  addNotification(wd.userId,'✅ Withdrawal Approved!',`Your withdrawal of ₹${wd.amount} has been processed.`);
+  logAdminAction(`Approved withdrawal ₹${wd.amount} for ${wd.username}`);
+  toast('Withdrawal approved!', 'success');
+  renderWithdrawals('pending');
+}
+
+function rejectWd(id) {
+  const wds = DB.get('withdrawals');
+  const wd = wds.find(w=>w.id===id);
+  wd.status = 'rejected';
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===wd.userId);
+  if (user) { user.balance+=wd.amount; DB.set('users', users); }
+  DB.set('withdrawals', wds);
+  addNotification(wd.userId,'❌ Withdrawal Rejected',`Your withdrawal of ₹${wd.amount} was rejected. Coins returned.`);
+  logAdminAction(`Rejected withdrawal ID ${id}`);
+  toast('Withdrawal rejected, coins returned', 'danger');
+  renderWithdrawals('pending');
+}
+
+// =====================================================================
+// BETS
+// =====================================================================
+function renderBets() {
+  const bets = DB.get('bets')||[];
+  const logs = DB.get('settleLogs')||[];
+  document.getElementById('settleLogs').innerHTML = logs.length ? logs.map(l=>`<div class="info-row"><span class="info-lbl">${l.match}</span><span>Winner: <strong>${l.winner}</strong> | ${l.settled} bets</span><span class="fs-11 text-muted">${l.time}</span></div>`).join('') : 'No logs yet.';
+  document.getElementById('adminBetsTable').innerHTML = bets.length ? bets.map(b=>`<tr>
+    <td>${b.username}</td>
+    <td class="fs-12">${b.matchName}</td>
+    <td>${b.team}</td>
+    <td>🪙${b.amount}</td>
+    <td>1.95x</td>
+    <td><span class="badge badge-${b.status==='won'?'success':b.status==='lost'?'danger':'warning'}">${b.status}</span></td>
+    <td class="fs-12">${b.date}</td>
+  </tr>`).join('') : '<tr><td colspan="7" class="text-center text-muted">No bets placed</td></tr>';
+}
+
+// =====================================================================
+// USERS
+// =====================================================================
+function renderUsers() {
+  const q = (document.getElementById('userSearch').value||'').toLowerCase();
+  const users = (DB.get('users')||[]).filter(u=>!q||u.username.toLowerCase().includes(q)||u.phone.includes(q));
+  document.getElementById('adminUsersTable').innerHTML = users.length ? users.map(u=>`<tr>
+    <td><strong>${u.username}</strong></td>
+    <td>${u.phone}</td>
+    <td class="text-blue">🪙${u.balance.toFixed(0)}</td>
+    <td>🪙${(u.totalWagered||0).toFixed(0)}</td>
+    <td>₹${(u.totalDeposited||0).toFixed(0)}</td>
+    <td><span class="badge badge-info">${u.vip||'Bronze'}</span></td>
+    <td><span class="badge badge-${u.blocked?'danger':'success'}">${u.blocked?'Blocked':'Active'}</span></td>
+    <td class="fs-12">${u.joinDate||'-'}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-${u.blocked?'success':'danger'} btn-xs" onclick="toggleBlock('${u.id}')">${u.blocked?'Unblock':'Block'}</button>
+      <button class="btn btn-outline btn-xs mt-4" onclick="adjustWallet('${u.id}','${u.username}')">Wallet</button>
+    </td>
+  </tr>`).join('') : '<tr><td colspan="9" class="text-center text-muted">No users found</td></tr>';
+}
+
+function toggleBlock(uid) {
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===uid);
+  user.blocked = !user.blocked;
+  DB.set('users', users);
+  logAdminAction(`${user.blocked?'Blocked':'Unblocked'} user ${user.username}`);
+  toast(`User ${user.blocked?'blocked':'unblocked'}`, user.blocked?'danger':'success');
+  renderUsers();
+}
+
+function adjustWallet(uid, uname) {
+  const amount = parseFloat(prompt(`Add coins to ${uname}:`));
+  if (!amount || isNaN(amount)) return;
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===uid);
+  user.balance = Math.max(0, (user.balance||0)+amount);
+  DB.set('users', users);
+  addNotification(uid,'💰 Wallet Adjusted',`Admin ${amount>0?'added':'deducted'} 🪙${Math.abs(amount)} from your wallet.`);
+  logAdminAction(`Wallet adjustment: ${amount>0?'+':''}${amount} for ${uname}`);
+  toast(`Wallet adjusted for ${uname}`, 'success');
+  renderUsers();
+}
+
+// =====================================================================
+// REPORTS
+// =====================================================================
+function renderReports() {
+  const users = DB.get('users')||[];
+  const bets = DB.get('bets')||[];
+  const settled = bets.filter(b=>b.status!=='pending');
+  const totalWon = users.reduce((s,u)=>s+(u.totalWon||0),0);
+  const totalBetAmt = settled.reduce((s,b)=>s+b.amount,0);
+  const revenue = totalBetAmt * 0.05;
+  document.getElementById('repTotalWon').textContent = totalWon.toFixed(0);
+  document.getElementById('repBetsSettled').textContent = settled.length;
+  document.getElementById('repRevenue').textContent = revenue.toFixed(0);
+  document.getElementById('repActiveUsers').textContent = users.filter(u=>!u.blocked).length;
+  const log = DB.get('adminLog')||[];
+  document.getElementById('adminActionLog').innerHTML = log.length ? log.map(l=>`<div class="info-row"><span class="info-lbl fs-12">${l.action}</span><span class="fs-11 text-muted">${l.time}</span></div>`).join('') : '<div class="text-muted">No admin actions logged</div>';
+}
+
+// =====================================================================
+// TICKETS
+// =====================================================================
+function adminTicketTab(filter, el) {
+  adminTicketFilter = filter;
+  document.querySelectorAll('#panel-tickets .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderTickets(filter);
+}
+
+function renderTickets(filter) {
+  const tickets = (DB.get('tickets')||[]).filter(t=>t.status===filter);
+  document.getElementById('adminTicketsTable').innerHTML = tickets.length ? tickets.map(t=>`<tr>
+    <td><strong>${t.username}</strong></td>
+    <td>${t.subject}</td>
+    <td class="fs-12">${t.message.slice(0,60)}...</td>
+    <td class="fs-12">${t.date}</td>
+    <td><span class="badge badge-${t.status==='open'?'warning':'success'}">${t.status}</span></td>
+    <td>${t.status==='open'?`<button class="btn btn-success btn-xs" onclick="resolveTicket('${t.id}')">Resolve</button>`:'✅'}</td>
+  </tr>`).join('') : `<tr><td colspan="6" class="text-center text-muted">No ${filter} tickets</td></tr>`;
+}
+
+function resolveTicket(id) {
+  const tickets = DB.get('tickets')||[];
+  const t = tickets.find(x=>x.id===id);
+  if (t) { t.status='resolved'; DB.set('tickets', tickets); toast('Ticket resolved', 'success'); renderTickets('open'); }
+}
+
+// =====================================================================
+// SETTINGS
+// =====================================================================
+function loadSettings() {
+  const links = DB.get('supportLinks')||{};
+  document.getElementById('setWhatsapp').value = links.whatsapp||'';
+  document.getElementById('setTelegram').value = links.telegram||'';
+  document.getElementById('setCustomSupport').value = links.custom||'';
+  const limits = DB.get('betLimits')||{ min:100, max:10000 };
+  document.getElementById('setBetMin').value = limits.min;
+  document.getElementById('setBetMax').value = limits.max;
+  const maintenance = DB.get('maintenance')||false;
+  document.getElementById('maintenanceToggle').checked = maintenance;
+  document.getElementById('maintenanceLabel').textContent = maintenance?'ON':'Off';
+  renderAdminBankList();
+  renderCouponList();
+  renderPromoCodeList();
+}
+
+function saveSupportLinks() {
+  DB.set('supportLinks', { whatsapp:document.getElementById('setWhatsapp').value.trim(), telegram:document.getElementById('setTelegram').value.trim(), custom:document.getElementById('setCustomSupport').value.trim() });
+  logAdminAction('Updated support links');
+  toast('Support links saved!', 'success');
+}
+
+function saveBetLimits() {
+  const min = parseInt(document.getElementById('setBetMin').value)||100;
+  const max = parseInt(document.getElementById('setBetMax').value)||10000;
+  if (min>=max) return toast('Min must be less than Max', 'danger');
+  DB.set('betLimits', { min, max });
+  logAdminAction(`Updated bet limits: Min 🪙${min}, Max 🪙${max}`);
+  toast(`Bet limits updated!`, 'success');
+}
+
+function toggleMaintenance() {
+  const val = document.getElementById('maintenanceToggle').checked;
+  DB.set('maintenance', val);
+  document.getElementById('maintenanceLabel').textContent = val?'ON':'Off';
+  logAdminAction(`Maintenance mode ${val?'enabled':'disabled'}`);
+  toast(val?'Maintenance mode ON':'Maintenance mode OFF', val?'warning':'success');
+}
+
+function changeAdminPass() {
+  const newPass = document.getElementById('adminNewPass').value;
+  if (!newPass || newPass.length < 6) return toast('Min 6 characters', 'danger');
+  logAdminAction('Admin password changed');
+  toast('Password updated (backend sync required in production)', 'success');
+}
+
+// BANK ACCOUNTS
+function renderAdminBankList() {
+  const banks = DB.get('bankAccounts')||[];
+  const qrData = DB.get('qrData')||{};
+  document.getElementById('adminBankList').innerHTML = banks.length ? banks.map(b=>`<div class="bank-card">
+    <div class="bank-info"><div class="bank-name">${b.bank} — ${b.name}</div><div class="bank-detail">Acc: ${b.num} | IFSC: ${b.ifsc}${b.upi?' | UPI: '+b.upi:''}</div></div>
+    <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+      <span class="badge badge-${b.active?'success':'muted'}">${b.active?'Active':'Off'}</span>
+      <button class="btn btn-${b.active?'danger':'success'} btn-xs" onclick="toggleBank('${b.id}')">${b.active?'Disable':'Enable'}</button>
+      <button class="btn btn-outline btn-xs" onclick="deleteBank('${b.id}')">Delete</button>
+    </div>
+  </div>`).join('') : '<div class="text-muted fs-12 mb-12">No bank accounts added yet.</div>';
+}
+
+function addBankAccount() {
+  const name = document.getElementById('newBankName').value.trim();
+  const num = document.getElementById('newBankNum').value.trim();
+  const ifsc = document.getElementById('newBankIfsc').value.trim();
+  const bank = document.getElementById('newBankBank').value.trim();
+  const upi = document.getElementById('newBankUpi').value.trim();
+  if (!name || !num || !ifsc || !bank) return toast('Fill required fields', 'danger');
+  const banks = DB.get('bankAccounts')||[];
+  const id = 'ba'+Date.now();
+  banks.push({ id, name, num, ifsc, bank, upi, active:true });
+  DB.set('bankAccounts', banks);
+  if (qrDataURL) {
+    const qrData = DB.get('qrData')||{};
+    qrData[id] = qrDataURL;
+    DB.set('qrData', qrData);
+    qrDataURL = null;
+  }
+  ['newBankName','newBankNum','newBankIfsc','newBankBank','newBankUpi'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('qrFileName').textContent = '';
+  logAdminAction(`Added bank account: ${bank} — ${name}`);
+  toast('Bank account added!', 'success');
+  renderAdminBankList();
+}
+
+function toggleBank(id) {
+  const banks = DB.get('bankAccounts')||[];
+  const b = banks.find(x=>x.id===id);
+  b.active = !b.active;
+  DB.set('bankAccounts', banks);
+  toast(`Bank ${b.active?'enabled':'disabled'}`, b.active?'success':'warning');
+  renderAdminBankList();
+}
+
+function deleteBank(id) {
+  if (!confirm('Delete this bank account?')) return;
+  DB.set('bankAccounts', (DB.get('bankAccounts')||[]).filter(b=>b.id!==id));
+  toast('Bank account deleted', 'danger');
+  renderAdminBankList();
+}
+
+function handleQRUpload(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => { qrDataURL = e.target.result; document.getElementById('qrFileName').textContent = '✅ '+input.files[0].name; };
+  reader.readAsDataURL(input.files[0]);
+}
+
+// COUPONS
+function renderCouponList() {
+  const coupons = DB.get('depositCoupons')||[];
+  document.getElementById('couponList').innerHTML = coupons.length ? coupons.map((c,i)=>`<div class="info-row"><span class="info-lbl">Deposit ₹${c.amount}</span><span class="text-success">+🪙${c.bonus}</span><button class="btn btn-danger btn-xs" onclick="deleteCoupon(${i})">Remove</button></div>`).join('') : '<div class="text-muted fs-12 mb-8">No coupons configured.</div>';
+}
+
+function addCoupon() {
+  const amt = parseFloat(document.getElementById('newCouponAmt').value);
+  const bonus = parseFloat(document.getElementById('newCouponBonus').value);
+  if (!amt || !bonus) return toast('Fill coupon fields', 'danger');
+  const coupons = DB.get('depositCoupons')||[];
+  coupons.push({ amount:amt, bonus });
+  coupons.sort((a,b)=>a.amount-b.amount);
+  DB.set('depositCoupons', coupons);
+  document.getElementById('newCouponAmt').value='';
+  document.getElementById('newCouponBonus').value='';
+  toast('Coupon added!', 'success');
+  renderCouponList();
+}
+
+function deleteCoupon(idx) {
+  const coupons = DB.get('depositCoupons')||[];
+  coupons.splice(idx,1);
+  DB.set('depositCoupons', coupons);
+  toast('Coupon removed', 'danger');
+  renderCouponList();
+}
+
+// PROMO CODES
+function renderPromoCodeList() {
+  const codes = DB.get('promoCodes')||{};
+  const el = document.getElementById('promoCodeList');
+  el.innerHTML = Object.keys(codes).length ? Object.entries(codes).map(([code,bonus])=>`<div class="info-row"><span class="info-lbl fw-600">${code}</span><span class="text-success">🪙${bonus}</span><button class="btn btn-danger btn-xs" onclick="deletePromoCode('${code}')">Remove</button></div>`).join('') : '<div class="text-muted fs-12 mb-8">No promo codes.</div>';
+}
+
+function addPromoCode() {
+  const code = document.getElementById('newPromoCode').value.trim().toUpperCase();
+  const bonus = parseFloat(document.getElementById('newPromoBonus').value);
+  if (!code || !bonus) return toast('Fill all fields', 'danger');
+  const codes = DB.get('promoCodes')||{};
+  codes[code] = bonus;
+  DB.set('promoCodes', codes);
+  document.getElementById('newPromoCode').value='';
+  document.getElementById('newPromoBonus').value='';
+  logAdminAction(`Added promo code: ${code} (+🪙${bonus})`);
+  toast(`Code ${code} added!`, 'success');
+  renderPromoCodeList();
+}
+
+function deletePromoCode(code) {
+  const codes = DB.get('promoCodes')||{};
+  delete codes[code];
+  DB.set('promoCodes', codes);
+  toast(`Code ${code} removed`, 'danger');
+  renderPromoCodeList();
+}
+
+// ADD BONUS TO USER
+function addBonusToUser() {
+  const uname = document.getElementById('bonusUser').value.trim();
+  const amount = parseFloat(document.getElementById('bonusAmount').value);
+  if (!uname || !amount) return toast('Fill all fields', 'danger');
+  const users = DB.get('users');
+  const user = users.find(u=>u.username.toLowerCase()===uname.toLowerCase());
+  if (!user) return toast('User not found', 'danger');
+  user.balance = (user.balance||0) + amount;
+  DB.set('users', users);
+  addNotification(user.id,'🎁 Bonus Coins!',`Admin added 🪙${amount} to your account!`);
+  logAdminAction(`Added 🪙${amount} to ${uname}`);
+  toast(`🪙${amount} coins added to ${uname}!`, 'success');
+  document.getElementById('bonusUser').value='';
+  document.getElementById('bonusAmount').value='';
+}
+</script>
+</body>
+</html>

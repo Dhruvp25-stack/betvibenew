@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BetVibe – Cricket Toss Betting</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #1565c0;
+  --blue-mid: #1976d2;
+  --blue-light: #42a5f5;
+  --blue-dark: #0d47a1;
+  --accent: #ffd600;
+  --accent2: #ff6f00;
+  --bg: #0a0e1a;
+  --bg2: #0f1520;
+  --bg3: #141c2e;
+  --bg4: #1a2236;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(21,101,192,0.4);
+  --text: #e8edf5;
+  --muted: #7a8ba8;
+  --dim: #3d4f6b;
+  --green: #00c853;
+  --red: #f44336;
+  --orange: #ff9800;
+  --r: 8px;
+  --r2: 14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+h1,h2,h3,h4,h5{font-family:'Exo 2',sans-serif;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--blue-mid);border-radius:2px;}
+
+/* LOADER */
+#loader{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity 0.5s;}
+#loader.hide{opacity:0;pointer-events:none;}
+.loader-logo{font-family:'Exo 2',sans-serif;font-size:42px;font-weight:900;background:linear-gradient(135deg,var(--blue-light),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.loader-bar{width:200px;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.loader-fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--accent));border-radius:2px;animation:fill 1.5s ease forwards;}
+@keyframes fill{to{width:100%;}}
+.loader-txt{font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at top left,rgba(21,101,192,0.15) 0%,transparent 50%),radial-gradient(ellipse at bottom right,rgba(255,214,0,0.05) 0%,transparent 50%),var(--bg);}
+.auth-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:36px;width:100%;max-width:440px;position:relative;}
+.auth-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--blue-light),var(--accent));border-radius:var(--r2) var(--r2) 0 0;}
+.auth-logo-wrap{text-align:center;margin-bottom:28px;}
+.logo-img-auth{height:70px;object-fit:contain;}
+.logo-text{font-family:'Exo 2',sans-serif;font-size:36px;font-weight:900;background:linear-gradient(135deg,var(--blue-light) 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-sub{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+.form-lbl{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px;}
+.form-inp{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:11px 14px;border-radius:var(--r);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s;}
+.form-inp:focus{border-color:var(--blue-mid);}
+.form-grp{margin-bottom:14px;}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:var(--r);font-family:'Exo 2',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none;transition:all 0.2s;text-decoration:none;letter-spacing:0.3px;}
+.btn-primary{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-mid) 100%);color:#fff;box-shadow:0 4px 15px rgba(21,101,192,0.3);}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,101,192,0.4);}
+.btn-accent{background:linear-gradient(135deg,var(--accent2) 0%,var(--accent) 100%);color:#000;}
+.btn-outline{background:transparent;border:1px solid var(--blue-mid);color:var(--blue-light);}
+.btn-outline:hover{background:rgba(21,101,192,0.1);}
+.btn-success{background:var(--green);color:#000;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-warn{background:var(--orange);color:#000;}
+.btn-block{width:100%;}
+.btn-sm{padding:7px 14px;font-size:12px;}
+.btn-xs{padding:4px 10px;font-size:11px;}
+.auth-switch{text-align:center;margin-top:18px;font-size:13px;color:var(--muted);}
+.auth-switch a{color:var(--blue-light);text-decoration:none;cursor:pointer;font-weight:600;}
+.alert{padding:10px 14px;border-radius:var(--r);font-size:12px;margin-bottom:14px;border:1px solid;}
+.alert-warn{background:rgba(255,152,0,0.1);border-color:rgba(255,152,0,0.3);color:var(--orange);}
+.alert-info{background:rgba(21,101,192,0.1);border-color:rgba(21,101,192,0.3);color:var(--blue-light);}
+.alert-success{background:rgba(0,200,83,0.1);border-color:rgba(0,200,83,0.3);color:var(--green);}
+.alert-danger{background:rgba(244,67,54,0.1);border-color:rgba(244,67,54,0.3);color:var(--red);}
+.check-row{display:flex;align-items:flex-start;gap:10px;margin:14px 0;}
+.check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--blue-mid);margin-top:2px;flex-shrink:0;}
+.check-row label{font-size:12px;color:var(--muted);line-height:1.5;}
+.check-row a{color:var(--blue-light);cursor:pointer;}
+
+/* NAVBAR */
+.navbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none;}
+.nav-logo-img{height:36px;}
+.nav-logo-text{font-family:'Exo 2',sans-serif;font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--blue-light),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-links{display:flex;gap:2px;}
+.nav-link{padding:7px 14px;border-radius:var(--r);font-size:13px;color:var(--muted);cursor:pointer;transition:all 0.15s;border:none;background:none;font-family:'Inter',sans-serif;font-weight:500;}
+.nav-link:hover,.nav-link.active{background:rgba(21,101,192,0.15);color:var(--blue-light);}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.coin-badge{background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.3);padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;font-family:'Exo 2',sans-serif;}
+.avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-light));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;cursor:pointer;font-family:'Exo 2',sans-serif;}
+.notif-btn{position:relative;cursor:pointer;font-size:17px;padding:6px;background:none;border:none;color:var(--muted);}
+.notif-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--red);border-radius:50%;display:none;}
+.notif-dot.show{display:block;}
+
+/* WRAP */
+.main-wrap{max-width:1200px;margin:0 auto;padding:24px 20px;}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;}
+.card-blue{border-color:var(--border2);}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--bg3) 0%,var(--bg2) 100%);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;margin-bottom:24px;position:relative;overflow:hidden;}
+.hero::after{content:'🏏';position:absolute;right:24px;bottom:-10px;font-size:100px;opacity:0.07;}
+.hero-title{font-family:'Exo 2',sans-serif;font-size:28px;font-weight:800;color:var(--text);}
+.hero-sub{font-size:14px;color:var(--muted);margin:6px 0 18px;}
+.hero-chips{display:flex;gap:16px;flex-wrap:wrap;}
+.hero-chip{background:rgba(21,101,192,0.15);border:1px solid rgba(21,101,192,0.3);padding:6px 16px;border-radius:20px;font-size:13px;}
+.hero-chip span{font-family:'Exo 2',sans-serif;font-weight:700;color:var(--blue-light);font-size:18px;margin-right:4px;}
+.refresh-bar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:14px;}
+.refresh-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--bg3);border-radius:var(--r);padding:4px;margin-bottom:20px;}
+.tab{padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;color:var(--muted);transition:all 0.15s;border:none;background:none;font-family:'Inter',sans-serif;flex:1;text-align:center;font-weight:500;}
+.tab.active{background:var(--blue);color:#fff;font-weight:600;}
+
+/* MATCH CARDS */
+.matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
+.match-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;transition:all 0.2s;cursor:default;}
+.match-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:0 4px 20px rgba(21,101,192,0.1);}
+.match-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.match-league{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.match-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;}
+.badge-live{background:rgba(244,67,54,0.15);color:var(--red);}
+.badge-upcoming{background:rgba(21,101,192,0.15);color:var(--blue-light);}
+.badge-closed{background:rgba(122,139,168,0.15);color:var(--muted);}
+.badge-done{background:rgba(0,200,83,0.15);color:var(--green);}
+.teams-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.team-block{text-align:center;flex:1;}
+.team-flag{font-size:32px;margin-bottom:4px;}
+.team-logo{width:44px;height:44px;border-radius:50%;object-fit:cover;margin:0 auto 4px;display:block;}
+.team-name{font-family:'Exo 2',sans-serif;font-size:16px;font-weight:700;color:var(--text);}
+.vs-orb{width:34px;height:34px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);font-weight:700;flex-shrink:0;}
+.bet-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.bet-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;text-align:center;cursor:pointer;transition:all 0.15s;}
+.bet-btn:hover{border-color:var(--blue-mid);background:rgba(21,101,192,0.1);}
+.bet-team{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.bet-odd{font-family:'Exo 2',sans-serif;font-size:20px;font-weight:700;color:var(--accent);}
+.match-locked{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;text-align:center;font-size:12px;color:var(--muted);margin-top:4px;}
+.toss-result{background:rgba(0,200,83,0.1);border:1px solid rgba(0,200,83,0.2);border-radius:var(--r);padding:8px;text-align:center;font-size:12px;color:var(--green);margin-top:8px;font-weight:600;}
+.match-footer{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:10px;}
+
+/* STATS GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.stat-val{font-family:'Exo 2',sans-serif;font-size:24px;font-weight:800;color:var(--text);}
+.stat-sub{font-size:11px;color:var(--dim);margin-top:3px;}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.3px;}
+.badge-success{background:rgba(0,200,83,0.15);color:var(--green);}
+.badge-danger{background:rgba(244,67,54,0.15);color:var(--red);}
+.badge-warning{background:rgba(255,152,0,0.15);color:var(--orange);}
+.badge-info{background:rgba(21,101,192,0.15);color:var(--blue-light);}
+.badge-muted{background:rgba(122,139,168,0.1);color:var(--muted);}
+
+/* WALLET */
+.wallet-hero{background:linear-gradient(135deg,var(--blue-dark) 0%,var(--blue-mid) 100%);border-radius:var(--r2);padding:24px;margin-bottom:20px;position:relative;overflow:hidden;}
+.wallet-hero::before{content:'';position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.05);}
+.wallet-balance{font-family:'Exo 2',sans-serif;font-size:44px;font-weight:900;color:#fff;}
+.wallet-lbl{font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.wallet-actions{display:flex;gap:10px;margin-top:18px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;position:relative;}
+.modal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--accent));border-radius:var(--r2) var(--r2) 0 0;}
+.modal-head{font-family:'Exo 2',sans-serif;font-size:20px;font-weight:700;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
+.modal-close{cursor:pointer;color:var(--muted);background:none;border:none;font-size:18px;line-height:1;}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--bg3);padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);}
+td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+
+/* INFO ROWS */
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.info-row:last-child{border-bottom:none;}
+.info-lbl{color:var(--muted);}
+.info-val{color:var(--text);font-weight:500;}
+
+/* SECTION TITLE */
+.sec-title{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* PAGE TITLE */
+.page-title{font-family:'Exo 2',sans-serif;font-size:24px;font-weight:800;margin-bottom:20px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border2);padding:14px 18px;border-radius:var(--r);font-size:13px;z-index:9999;min-width:250px;max-width:350px;box-shadow:0 8px 32px rgba(0,0,0,0.4);transform:translateY(120px);opacity:0;transition:all 0.3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-color:var(--green);}
+.toast.danger{border-color:var(--red);}
+.toast.warning{border-color:var(--orange);}
+
+/* NOTIF PANEL */
+.notif-panel{position:fixed;top:68px;right:16px;width:300px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);z-index:400;box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+.notif-panel.hidden{display:none;}
+.notif-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:600;}
+.notif-item{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;}
+.notif-item.unread{background:rgba(21,101,192,0.07);}
+.notif-title{font-weight:600;color:var(--text);margin-bottom:3px;}
+.notif-body{color:var(--muted);line-height:1.4;}
+.notif-time{font-size:10px;color:var(--dim);margin-top:4px;}
+
+/* PROFILE */
+.profile-avatar{width:72px;height:72px;background:linear-gradient(135deg,var(--blue),var(--blue-light));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 12px;font-family:'Exo 2',sans-serif;}
+
+/* PROGRESS */
+.progress-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:6px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-light));border-radius:3px;transition:width 0.5s;}
+
+/* BANK CARD */
+.bank-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color 0.2s;}
+.bank-card:hover,.bank-card.selected{border-color:var(--blue-mid);}
+.bank-name{font-weight:600;font-size:14px;color:var(--text);margin-bottom:4px;}
+.bank-detail{font-size:12px;color:var(--muted);}
+.qr-img{width:80px;height:80px;object-fit:cover;border-radius:4px;margin-top:8px;}
+
+/* REFERRAL */
+.ref-code{background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r);padding:14px;text-align:center;font-family:'Exo 2',sans-serif;font-size:26px;font-weight:800;color:var(--accent);letter-spacing:4px;cursor:pointer;margin:10px 0;}
+
+/* VIP BADGE */
+.vip-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;}
+.vip-bronze{background:rgba(205,127,50,0.15);color:#cd7f32;}
+.vip-silver{background:rgba(192,192,192,0.15);color:#c0c0c0;}
+.vip-gold{background:rgba(255,215,0,0.15);color:#ffd700;}
+.vip-diamond{background:rgba(185,242,255,0.15);color:#b9f2ff;}
+
+/* CHAT */
+.chat-float{position:fixed;bottom:24px;right:24px;z-index:300;}
+.chat-window{position:absolute;bottom:56px;right:0;width:300px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);overflow:hidden;display:none;}
+.chat-window.open{display:flex;flex-direction:column;}
+.chat-hdr{background:var(--blue-dark);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.chat-agent{font-weight:600;font-size:14px;}
+.chat-status{font-size:11px;color:rgba(255,255,255,0.7);}
+.chat-msgs{flex:1;padding:12px;min-height:160px;max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.chat-msg{padding:8px 12px;border-radius:12px;font-size:12px;max-width:85%;}
+.chat-msg.bot{background:var(--bg3);color:var(--text);align-self:flex-start;}
+.chat-msg.user{background:var(--blue-mid);color:#fff;align-self:flex-end;}
+.chat-quick{padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border);}
+.chat-inp-row{display:flex;border-top:1px solid var(--border);}
+.chat-inp-row input{flex:1;background:var(--bg3);border:none;color:var(--text);padding:10px 14px;font-size:13px;font-family:'Inter',sans-serif;outline:none;}
+.chat-inp-row button{background:var(--blue);color:#fff;border:none;padding:10px 14px;cursor:pointer;}
+.chat-fab{width:48px;height:48px;background:linear-gradient(135deg,var(--blue),var(--blue-light));border-radius:50%;border:none;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(21,101,192,0.4);}
+
+/* MAINTENANCE */
+#maintenanceOverlay{display:none;position:fixed;inset:0;background:rgba(10,14,26,0.97);z-index:9998;align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;padding:20px;}
+#maintenanceOverlay.active{display:flex;}
+
+/* WAGER PROGRESS */
+#wagerProgress{display:none;margin:10px 0;}
+#wagerAmounts{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* SECTIONS */
+[id^="section-"]{display:none;}
+[id^="section-"].active{display:block;}
+
+/* UTILS */
+.hidden{display:none!important;}
+.text-center{text-align:center;}
+.text-right{text-align:right;}
+.text-muted{color:var(--muted);}
+.text-success{color:var(--green);}
+.text-danger{color:var(--red);}
+.text-warn{color:var(--orange);}
+.text-blue{color:var(--blue-light);}
+.text-accent{color:var(--accent);}
+.fw-600{font-weight:600;}
+.fw-700{font-weight:700;}
+.fs-11{font-size:11px;}
+.fs-12{font-size:12px;}
+.fs-13{font-size:13px;}
+.flex{display:flex;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;}
+.flex-center{display:flex;align-items:center;justify-content:center;}
+.gap-8{gap:8px;}
+.gap-12{gap:12px;}
+.mt-4{margin-top:4px;}
+.mt-8{margin-top:8px;}
+.mt-12{margin-top:12px;}
+.mt-16{margin-top:16px;}
+.mt-20{margin-top:20px;}
+.mb-8{margin-bottom:8px;}
+.mb-12{margin-bottom:12px;}
+.mb-16{margin-bottom:16px;}
+.mb-20{margin-bottom:20px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+/* LANG */
+.lang-sw{display:flex;gap:4px;background:var(--bg3);border-radius:6px;padding:3px;}
+.lang-btn{padding:4px 12px;border-radius:4px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Inter',sans-serif;}
+.lang-btn.active{background:var(--blue-mid);color:#fff;}
+
+/* WAGER SECTION */
+.wager-sect{background:var(--bg3);border-radius:var(--r);padding:12px;margin-top:12px;}
+
+/* DEPOSIT UPLOAD */
+.file-drop{border:2px dashed var(--border);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:border-color 0.2s;position:relative;}
+.file-drop:hover{border-color:var(--blue-mid);}
+.file-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.file-name{font-size:12px;color:var(--green);margin-top:6px;}
+
+/* TERMS */
+.terms-wrap{font-size:12px;color:var(--muted);line-height:1.8;max-height:55vh;overflow-y:auto;padding-right:8px;}
+.terms-wrap h3{color:var(--text);font-size:14px;margin:12px 0 5px;}
+
+/* SECTION HEADER */
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+
+/* LB */
+.lb-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.lb-rank{width:28px;font-family:'Exo 2',sans-serif;font-size:18px;font-weight:800;color:var(--muted);}
+.lb-rank.gold{color:#ffd700;}
+.lb-rank.silver{color:#c0c0c0;}
+.lb-rank.bronze{color:#cd7f32;}
+
+/* CHECKIN GRID */
+.checkin-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0;}
+.checkin-day{border-radius:6px;padding:8px 4px;text-align:center;font-size:11px;border:1px solid;}
+
+/* SPIN */
+#spinWheel{font-size:40px;display:block;margin:12px auto;transition:transform 1s ease;}
+
+@media(max-width:768px){
+  .nav-links{display:none;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .matches-grid{grid-template-columns:1fr;}
+  .grid-2{grid-template-columns:1fr;}
+  .input-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">🎯 BetVibe</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <div class="loader-txt">Loading Platform...</div>
+</div>
+
+<!-- MAINTENANCE -->
+<div id="maintenanceOverlay">
+  <div style="font-size:48px;">🔧</div>
+  <h2 style="font-family:'Exo 2',sans-serif;font-size:28px;color:var(--orange);">Under Maintenance</h2>
+  <p style="color:var(--muted);max-width:400px;">We're upgrading the platform. Please check back soon.</p>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- TERMS MODAL -->
+<div class="modal-overlay" id="termsModal">
+<div class="modal-box" style="max-width:520px;">
+  <div class="modal-head">Terms & Conditions <button class="modal-close" onclick="closeModal('termsModal')">✕</button></div>
+  <div class="terms-wrap">
+    <h3>1. Age Requirement</h3><p>You must be 18+ to use BetVibe. Any violation leads to immediate account termination.</p>
+    <h3>2. Account Registration</h3><p>One account per user. Multiple accounts will be permanently banned.</p>
+    <h3>3. Deposits & Withdrawals</h3><p>Min deposit: ₹300. Max: ₹10,000. Min withdrawal: ₹300. 70% wagering requirement before withdrawal.</p>
+    <h3>4. Betting Rules</h3><p>All toss bets carry odds of 1.95. Market closes 30 minutes before match. Minimum bet: ₹100.</p>
+    <h3>5. Responsible Gaming</h3><p>BetVibe encourages responsible gaming. Use self-exclusion if needed.</p>
+    <h3>6. Privacy & Data</h3><p>Data collected for service delivery only and not shared with third parties.</p>
+    <h3>7. Fair Play</h3><p>Any manipulation or fraud results in immediate account termination.</p>
+    <h3>8. Withdrawal Password</h3><p>A separate withdrawal password is required. BetVibe will never ask for this password.</p>
+    <h3>9. Referral Program</h3><p>Earn 100 coins per verified referral.</p>
+    <h3>10. Disputes</h3><p>Must be raised within 7 days. Management's decision is final.</p>
+    <p style="margin-top:14px;color:var(--orange);">By creating an account, you agree to these Terms & Conditions.</p>
+  </div>
+  <button class="btn btn-primary btn-block mt-16" onclick="closeModal('termsModal')">I Understand</button>
+</div>
+</div>
+
+<!-- BET MODAL -->
+<div class="modal-overlay" id="betModal">
+<div class="modal-box">
+  <div class="modal-head">Place Toss Bet <button class="modal-close" onclick="closeModal('betModal')">✕</button></div>
+  <div id="betModalContent"></div>
+</div>
+</div>
+
+<!-- MATCH DETAIL MODAL -->
+<div class="modal-overlay" id="matchDetailModal">
+<div class="modal-box" style="max-width:460px;">
+  <div class="modal-head">
+    <div>
+      <div id="matchDetailTitle" style="font-size:18px;"></div>
+      <div id="matchDetailSubtitle" style="font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;"></div>
+    </div>
+    <button class="modal-close" onclick="closeModal('matchDetailModal')">✕</button>
+  </div>
+  <div id="matchDetailRows"></div>
+</div>
+</div>
+
+<!-- WITHDRAWAL PASSWORD MODAL -->
+<div class="modal-overlay" id="wdPassModal">
+<div class="modal-box">
+  <div class="modal-head">Set Withdrawal Password <button class="modal-close" onclick="closeModal('wdPassModal')">✕</button></div>
+  <div class="alert alert-warn">Set a separate withdrawal password before making withdrawals.</div>
+  <div class="form-grp"><label class="form-lbl">New Withdrawal Password</label><input type="password" id="wdPass1" class="form-inp" placeholder="Min 4 characters"></div>
+  <div class="form-grp"><label class="form-lbl">Confirm Withdrawal Password</label><input type="password" id="wdPass2" class="form-inp" placeholder="Confirm password"></div>
+  <button class="btn btn-primary btn-block" onclick="saveWdPassword()">Set Password</button>
+</div>
+</div>
+
+<!-- FORGOT MODAL -->
+<div class="modal-overlay" id="forgotModal">
+<div class="modal-box" style="max-width:380px;">
+  <div class="modal-head">Reset Password <button class="modal-close" onclick="closeModal('forgotModal')">✕</button></div>
+  <div id="forgotStep1">
+    <div class="form-grp"><label class="form-lbl">Registered Phone Number</label><input type="tel" id="forgotPhone" class="form-inp" placeholder="10-digit number"></div>
+    <button class="btn btn-primary btn-block" onclick="forgotSendOTP()">Continue</button>
+  </div>
+  <div id="forgotStep2" class="hidden">
+    <div class="form-grp"><label class="form-lbl">New Password</label><input type="password" id="forgotNewPass" class="form-inp"></div>
+    <button class="btn btn-primary btn-block" onclick="forgotResetPass()">Reset Password</button>
+  </div>
+</div>
+</div>
+
+<!-- NOTIF PANEL -->
+<div class="notif-panel hidden" id="notifPanel">
+  <div class="notif-hdr"><span>🔔 Notifications</span><span class="fs-12 text-blue" style="cursor:pointer;" onclick="markAllRead()">Mark all read</span></div>
+  <div id="notifList" style="max-height:320px;overflow-y:auto;"></div>
+</div>
+
+<!-- ============================= REGISTER ============================= -->
+<div class="view active" id="view-register">
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo-wrap">
+      <div class="logo-text">🎯 BetVibe</div>
+      <div class="logo-sub">Cricket Toss Betting Platform</div>
+    </div>
+    <div class="alert alert-warn">🔞 Must be 18+ | Earn 100 🪙 on signup!</div>
+    <div class="input-row">
+      <div class="form-grp"><label class="form-lbl">Username</label><input type="text" id="reg-username" class="form-inp" placeholder="letters & numbers" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'')"></div>
+      <div class="form-grp"><label class="form-lbl">Phone</label><input type="tel" id="reg-phone" class="form-inp" placeholder="10-digit" maxlength="10"></div>
+    </div>
+    <div class="form-grp"><label class="form-lbl">Password</label><input type="password" id="reg-password" class="form-inp" placeholder="Min 6 characters"></div>
+    <div class="form-grp"><label class="form-lbl">Referral Code (Optional)</label><input type="text" id="reg-referral" class="form-inp" placeholder="Enter referral code"></div>
+    <div class="check-row"><input type="checkbox" id="ageCheck"><label for="ageCheck">I confirm I am 18+ and agree to <a onclick="openModal('termsModal')">Terms & Conditions</a></label></div>
+    <button class="btn btn-primary btn-block" onclick="doRegister()">Create Account</button>
+    <div class="auth-switch">Already have an account? <a onclick="showView('view-login')">Sign In</a></div>
+  </div>
+</div>
+</div>
+
+<!-- ============================= LOGIN ============================= -->
+<div class="view" id="view-login">
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo-wrap">
+      <div class="logo-text">🎯 BetVibe</div>
+      <div class="logo-sub">Welcome Back</div>
+    </div>
+    <div class="form-grp"><label class="form-lbl">Username or Phone</label><input type="text" id="login-user" class="form-inp" placeholder="Enter username or phone"></div>
+    <div class="form-grp"><label class="form-lbl">Password</label><input type="password" id="login-pass" class="form-inp" placeholder="Enter password"></div>
+    <div class="flex-between mb-12 mt-4">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;"><input type="checkbox" style="accent-color:var(--blue-mid);"> Remember Me</label>
+      <a style="font-size:12px;color:var(--blue-light);cursor:pointer;" onclick="openModal('forgotModal')">Forgot Password?</a>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()">Sign In</button>
+    <div class="auth-switch">No account? <a onclick="showView('view-register')">Register Now</a></div>
+  </div>
+</div>
+</div>
+
+<!-- ============================= APP ============================= -->
+<div class="view" id="view-app">
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-logo" onclick="showSection('home')">
+    <span class="nav-logo-text">🎯 BetVibe</span>
+  </a>
+  <div class="nav-links">
+    <button class="nav-link active" id="nav-home" onclick="showSection('home')">🏏 Matches</button>
+    <button class="nav-link" id="nav-wallet" onclick="showSection('wallet')">🪙 Coins</button>
+    <button class="nav-link" id="nav-bets" onclick="showSection('bets')">🎫 My Bets</button>
+    <button class="nav-link" id="nav-promo" onclick="showSection('promo')">🎁 Promos</button>
+    <button class="nav-link" id="nav-profile" onclick="showSection('profile')">👤 Profile</button>
+    <button class="nav-link" id="nav-support" onclick="showSection('support')">💬 Support</button>
+  </div>
+  <div class="nav-right">
+    <button class="notif-btn" onclick="toggleNotifPanel()" id="notifBell">🔔<span class="notif-dot" id="notifDot"></span></button>
+    <div class="coin-badge" onclick="showSection('wallet')">🪙 <span id="navBalance">0</span></div>
+    <div class="avatar" id="navAvatar" onclick="showSection('profile')">?</div>
+  </div>
+</nav>
+
+<div class="main-wrap">
+
+<!-- HOME SECTION -->
+<div id="section-home" class="active">
+  <div class="hero">
+    <div class="hero-title">Cricket Toss Betting</div>
+    <div class="hero-sub">Predict the toss, win big. Auto-settlement every 20 seconds.</div>
+    <div class="hero-chips">
+      <div class="hero-chip"><span id="heroLiveCount">0</span>Live</div>
+      <div class="hero-chip"><span id="heroUpcomingCount">0</span>Upcoming</div>
+      <div class="hero-chip"><span>1.95x</span>Odds</div>
+    </div>
+    <div class="refresh-bar"><div class="refresh-dot"></div>Auto-refreshing every 20s | <span id="refreshCountdown">20</span>s until next update</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="filterMatches('all',this)">All</button>
+    <button class="tab" onclick="filterMatches('live',this)">🔴 Live</button>
+    <button class="tab" onclick="filterMatches('upcoming',this)">🕐 Upcoming</button>
+    <button class="tab" onclick="filterMatches('completed',this)">✅ Completed</button>
+  </div>
+  <div class="matches-grid" id="matchesGrid"></div>
+</div>
+
+<!-- WALLET SECTION -->
+<div id="section-wallet">
+  <div class="wallet-hero">
+    <div class="wallet-lbl">Available Coins</div>
+    <div class="wallet-balance">🪙 <span id="walMainBal">0</span></div>
+    <div class="mt-8 fs-13" style="color:rgba(255,255,255,0.7);">Bonus: 🪙<span id="walBonusBal">0</span> &nbsp;|&nbsp; Wagered: 🪙<span id="walWagered">0</span></div>
+    <div class="wallet-actions">
+      <button class="btn btn-accent" onclick="walTab('deposit',this)">⬇ Deposit</button>
+      <button class="btn btn-outline" onclick="walTab('withdraw',this)">⬆ Withdraw</button>
+      <button class="btn btn-outline" onclick="walTab('history',this)">📋 History</button>
+    </div>
+  </div>
+
+  <!-- WAGERING -->
+  <div id="wagerProgress" class="card mb-16">
+    <div class="flex-between fs-12"><span class="text-muted">Wagering Requirement</span><span id="wagerPct" class="text-blue">0%</span></div>
+    <div class="progress-bar mt-8"><div class="progress-fill" id="wagerFill" style="width:0%"></div></div>
+    <div id="wagerAmounts"><span id="wagerDone">🪙0</span><span id="wagerNeeded">🪙0 needed</span></div>
+  </div>
+
+  <!-- WALLET TABS -->
+  <div class="tabs" id="walletTabBar" style="display:none;">
+    <button class="tab active" id="wt-deposit" onclick="walTab('deposit',this)">Deposit</button>
+    <button class="tab" id="wt-withdraw" onclick="walTab('withdraw',this)">Withdraw</button>
+    <button class="tab" id="wt-history" onclick="walTab('history',this)">History</button>
+  </div>
+
+  <!-- DEPOSIT -->
+  <div id="walletDeposit" class="card">
+    <div class="sec-title">⬇ Deposit Coins</div>
+    <div id="depositBankList"></div>
+    <div id="depositForm" class="hidden mt-16">
+      <div class="form-grp"><label class="form-lbl">Amount (₹)</label><input type="number" id="depAmount" class="form-inp" placeholder="Min ₹300"></div>
+      <div class="form-grp"><label class="form-lbl">UTR / Reference Number</label><input type="text" id="depUTR" class="form-inp" placeholder="Transaction reference"></div>
+      <div class="form-grp"><label class="form-lbl">Upload Screenshot</label>
+        <div class="file-drop"><input type="file" accept="image/*" onchange="handleDepScreenshot(this)"><div>📁 Click to upload payment screenshot</div><div class="file-name" id="depFileName"></div></div>
+      </div>
+      <div id="depositCouponInfo" class="alert alert-success hidden"></div>
+      <button class="btn btn-primary btn-block" onclick="submitDeposit()">Submit Deposit Request</button>
+    </div>
+  </div>
+
+  <!-- WITHDRAW -->
+  <div id="walletWithdraw" class="hidden card">
+    <div class="sec-title">⬆ Withdraw Coins</div>
+    <div class="alert alert-info">Min: ₹300 | Requires 70% wagering completion</div>
+    <div class="form-grp"><label class="form-lbl">Amount (₹)</label><input type="number" id="wdAmount" class="form-inp" placeholder="Min ₹300"></div>
+    <div class="form-grp"><label class="form-lbl">Account Holder Name</label><input type="text" id="wdName" class="form-inp"></div>
+    <div class="input-row">
+      <div class="form-grp"><label class="form-lbl">Account Number</label><input type="text" id="wdAccNum" class="form-inp"></div>
+      <div class="form-grp"><label class="form-lbl">IFSC Code</label><input type="text" id="wdIfsc" class="form-inp"></div>
+    </div>
+    <div class="form-grp"><label class="form-lbl">Bank Name</label><input type="text" id="wdBank" class="form-inp"></div>
+    <div class="form-grp"><label class="form-lbl">Withdrawal Password</label>
+      <div class="flex gap-8">
+        <input type="password" id="wdPass" class="form-inp" placeholder="Required" style="flex:1;">
+        <button class="btn btn-outline btn-sm" onclick="openModal('wdPassModal')">Set</button>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="submitWithdrawal()">Submit Withdrawal</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="walletHistory" class="hidden card">
+    <div class="sec-title">📋 Transaction History</div>
+    <div class="tabs" style="margin-bottom:16px;">
+      <button class="tab active" onclick="historyTab('deposits',this)">Deposits</button>
+      <button class="tab" onclick="historyTab('withdrawals',this)">Withdrawals</button>
+      <button class="tab" onclick="historyTab('bets',this)">Bets</button>
+      <button class="tab" onclick="historyTab('pnl',this)">P&L</button>
+    </div>
+    <div class="table-wrap"><table><thead id="histTableHead"></thead><tbody id="histTableBody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- BETS SECTION -->
+<div id="section-bets">
+  <div class="page-title">🎫 My Bets</div>
+  <div class="tabs">
+    <button class="tab active" onclick="betsTab('all',this)">All</button>
+    <button class="tab" onclick="betsTab('pending',this)">Pending</button>
+    <button class="tab" onclick="betsTab('won',this)">Won</button>
+    <button class="tab" onclick="betsTab('lost',this)">Lost</button>
+  </div>
+  <div class="card"><div class="table-wrap">
+    <table><thead><tr><th>Match</th><th>Team</th><th>Coins</th><th>Potential</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody id="myBetsTable"></tbody></table>
+  </div></div>
+</div>
+
+<!-- PROMOS SECTION -->
+<div id="section-promo">
+  <div class="page-title">🎁 Promotions</div>
+  <div class="grid-2 mb-20">
+    <div class="card">
+      <div class="sec-title">👥 Referral Program</div>
+      <div class="text-center mb-12">
+        <div class="ref-code" id="refCode" onclick="copyRef()">------</div>
+        <div class="fs-12 text-muted">Click to copy</div>
+      </div>
+      <div class="info-row"><span class="info-lbl">Total Referrals</span><span class="info-val text-blue" id="refCount">0</span></div>
+      <div class="info-row"><span class="info-lbl">Bonus Earned</span><span class="info-val text-accent">🪙<span id="refBonus">0</span></span></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">🎰 Daily Spin</div>
+      <div class="text-center">
+        <span id="spinWheel">🎡</span>
+        <div id="spinStatus" class="fs-13 text-muted mb-12">Spin once per day!</div>
+        <button class="btn btn-accent btn-block" onclick="doSpin()">Spin Now!</button>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2 mb-20">
+    <div class="card">
+      <div class="sec-title">📅 Daily Check-in</div>
+      <div class="checkin-grid" id="checkinGrid"></div>
+      <button class="btn btn-primary btn-block mt-12" onclick="doCheckin()">Check In Today</button>
+    </div>
+    <div class="card">
+      <div class="sec-title">🏆 Leaderboard</div>
+      <div id="leaderboard"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec-title">🎟️ Promo Codes</div>
+    <div class="flex gap-8">
+      <input type="text" id="promoCodeInput" class="form-inp" placeholder="Enter promo code" style="flex:1;">
+      <button class="btn btn-primary" onclick="redeemPromo()">Redeem</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SECTION -->
+<div id="section-profile">
+  <div class="page-title">👤 Profile</div>
+  <div class="grid-2">
+    <div>
+      <div class="card mb-16">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div class="text-center mb-16">
+          <div style="font-family:'Exo 2',sans-serif;font-size:20px;font-weight:700;" id="profileUsername">-</div>
+          <div class="text-muted fs-12" id="profilePhone">-</div>
+          <div class="mt-8" id="profileVIPBadge"></div>
+        </div>
+        <div class="info-row"><span class="info-lbl">Joined</span><span class="info-val" id="profileJoined">-</span></div>
+        <div class="info-row"><span class="info-lbl">Total Bets</span><span class="info-val" id="profileBets">0</span></div>
+        <div class="info-row"><span class="info-lbl">Total Won</span><span class="info-val text-accent" id="profileWon">🪙0</span></div>
+      </div>
+      <div class="card">
+        <div class="sec-title" style="font-size:15px;">🔐 Change Password</div>
+        <div class="form-grp"><label class="form-lbl">Current Password</label><input type="password" id="chgOldPass" class="form-inp"></div>
+        <div class="form-grp"><label class="form-lbl">New Password</label><input type="password" id="chgNewPass" class="form-inp"></div>
+        <button class="btn btn-primary btn-block" onclick="changePassword()">Update Password</button>
+        <button class="btn btn-outline btn-block mt-8" onclick="openModal('wdPassModal')">Change Withdrawal Password</button>
+      </div>
+    </div>
+    <div>
+      <div class="card mb-16">
+        <div class="sec-title" style="font-size:15px;">📱 Login History</div>
+        <div id="loginHistory" class="fs-12"></div>
+      </div>
+      <div class="card mb-16">
+        <div class="sec-title" style="font-size:15px;">🏦 Bank Details</div>
+        <div id="savedBankDetails"></div>
+      </div>
+      <div class="card">
+        <div class="sec-title" style="font-size:15px;">⚙️ Settings</div>
+        <div class="info-row"><span class="info-lbl">Session Time</span><span id="sessionTimer" class="info-val text-warn">00:00</span></div>
+        <div class="info-row">
+          <span class="info-lbl">Language</span>
+          <div class="lang-sw">
+            <button class="lang-btn active" id="langEN" onclick="setLang('en')">EN</button>
+            <button class="lang-btn" id="langHI" onclick="setLang('hi')">हि</button>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-block mt-12" onclick="doLogout()">Logout</button>
+        <button class="btn btn-outline btn-block mt-8" style="border-color:var(--red);color:var(--red);" onclick="selfExclusion()">Self Exclusion</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPORT SECTION -->
+<div id="section-support">
+  <div class="page-title">💬 Support</div>
+  <div class="grid-2">
+    <div class="card mb-16">
+      <div class="sec-title">🔗 Contact Us</div>
+      <div id="supportLinks"></div>
+      <div class="mt-16">
+        <div class="sec-title" style="font-size:15px;">📩 Submit Ticket</div>
+        <div class="form-grp"><label class="form-lbl">Subject</label>
+          <select id="ticketSubject" class="form-inp">
+            <option>Deposit Issue</option>
+            <option>Withdrawal Issue</option>
+            <option>Bet Query</option>
+            <option>Account Issue</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-grp"><label class="form-lbl">Message</label><textarea id="ticketMsg" class="form-inp" style="resize:vertical;min-height:80px;" placeholder="Describe your issue"></textarea></div>
+        <button class="btn btn-primary btn-block" onclick="submitTicket()">Submit Ticket</button>
+      </div>
+    </div>
+    <div>
+      <div class="card mb-16">
+        <div class="sec-title" style="font-size:15px;">📋 My Tickets</div>
+        <div id="myTickets" class="fs-13 text-muted"></div>
+      </div>
+      <div class="card">
+        <div class="sec-title" style="font-size:15px;">❓ FAQ</div>
+        <div class="info-row" style="cursor:pointer;" onclick="openFAQ('deposit')"><span class="info-lbl">How to deposit?</span><span>→</span></div>
+        <div class="info-row" style="cursor:pointer;" onclick="openFAQ('withdraw')"><span class="info-lbl">How to withdraw?</span><span>→</span></div>
+        <div class="info-row" style="cursor:pointer;" onclick="openFAQ('bet')"><span class="info-lbl">How to place a bet?</span><span>→</span></div>
+        <div class="info-row" style="cursor:pointer;" onclick="openFAQ('toss')"><span class="info-lbl">When is toss settled?</span><span>→</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main-wrap -->
+
+<!-- CHAT FLOAT -->
+<div class="chat-float" id="chatFloat" style="display:none;">
+  <div class="chat-window" id="chatWindow">
+    <div class="chat-hdr">
+      <div><div class="chat-agent">🎧 BetVibe Support</div><div class="chat-status">● Online</div></div>
+      <button onclick="toggleChat()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;">✕</button>
+    </div>
+    <div class="chat-msgs" id="chatMessages">
+      <div class="chat-msg bot">👋 Hi! Welcome to BetVibe Support. How can I help?</div>
+    </div>
+    <div class="chat-quick" id="chatQuickLinks">
+      <button class="btn btn-outline btn-xs" onclick="chatReply('Deposit issue')">Deposit</button>
+      <button class="btn btn-outline btn-xs" onclick="chatReply('Withdrawal issue')">Withdrawal</button>
+      <button class="btn btn-outline btn-xs" onclick="chatReply('Bet query')">Bet Query</button>
+    </div>
+    <div class="chat-inp-row">
+      <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()">➤</button>
+    </div>
+  </div>
+  <button class="chat-fab" onclick="toggleChat()">💬</button>
+</div>
+
+</div><!-- end view-app -->
+
+<script>
+// =====================================================================
+// DATABASE (localStorage)
+// =====================================================================
+const DB = {
+  get: k => { try { return JSON.parse(localStorage.getItem('bv_'+k)); } catch(e) { return null; } },
+  set: (k,v) => localStorage.setItem('bv_'+k, JSON.stringify(v)),
+  del: k => localStorage.removeItem('bv_'+k)
+};
+
+function initDB() {
+  if (!DB.get('users')) DB.set('users', []);
+  if (!DB.get('bets')) DB.set('bets', []);
+  if (!DB.get('deposits')) DB.set('deposits', []);
+  if (!DB.get('withdrawals')) DB.set('withdrawals', []);
+  if (!DB.get('bankAccounts')) DB.set('bankAccounts', [
+    { id:'ba1', name:'Dhruv Patni', num:'110217291024', ifsc:'CNRB0017040', bank:'Canara Bank', upi:'dhruv@canara', qr:null, active:true }
+  ]);
+  if (!DB.get('promoCodes')) DB.set('promoCodes', { 'BET100':100, 'WELCOME50':50, 'LUCKY200':200 });
+  if (!DB.get('adminLog')) DB.set('adminLog', []);
+  if (!DB.get('tickets')) DB.set('tickets', []);
+  if (!DB.get('notifications')) DB.set('notifications', []);
+  if (!DB.get('settleLogs')) DB.set('settleLogs', []);
+  if (!DB.get('supportLinks')) DB.set('supportLinks', { whatsapp:'', telegram:'', custom:'' });
+  if (!DB.get('betLimits')) DB.set('betLimits', { min:100, max:10000 });
+  if (!DB.get('depositCoupons')) DB.set('depositCoupons', [{ amount:1000, bonus:100 },{ amount:5000, bonus:600 },{ amount:10000, bonus:1500 }]);
+  if (!DB.get('maintenance')) DB.set('maintenance', false);
+  if (!DB.get('qrData')) DB.set('qrData', {});
+  // Always fetch latest matches from server
+  getDefaultMatches().then(data => {
+    if (data && data.length) {
+      // Auto-settle any toss results found in JSON
+      const existing = DB.get('matches') || [];
+      data.forEach(m => {
+        if (m.tossResult) {
+          const old = existing.find(e => e.id === m.id);
+          if (old && !old.tossResult) settleToss(m.id, m.tossResult);
+        }
+      });
+      DB.set('matches', data);
+    }
+    if (typeof renderMatches === 'function') renderMatches();
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+// BACKEND CONFIG
+// Set this to your Railway/Render backend URL when deploying.
+// Leave empty ('') to use same-origin (local Flask server).
+// Example: const BACKEND_URL = 'https://betvibe-backend.up.railway.app';
+const BACKEND_URL = 'web-production-e046e.up.railway.app';
+function apiUrl(path) {
+  return BACKEND_URL ? BACKEND_URL.replace(/\/$/, '') + path : path;
+}
+// ─────────────────────────────────────────────────────────
+
+async function getDefaultMatches() {
+  try {
+    const res = await fetch(apiUrl('/matches.json') + '?t=' + Date.now());
+    // If the server returns HTML (not running via Flask), gracefully bail out
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok || !contentType.includes('json')) {
+      console.warn('matches.json not available — server may not be running.');
+      return [];
+    }
+    const data = await res.json();
+
+    // IST offset: UTC+5:30
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const now = Date.now();
+    const nowIST = now + IST_OFFSET;
+    const cutoffIST = nowIST + 48 * 60 * 60 * 1000;
+
+    return data
+      .map((raw, idx) => {
+        // Parse teams from match_link_text or match field
+        // e.g. "KKR vs RR" or "RR vs KKR - Need 119 off 93b"
+        const matchStr = raw.match || raw.match_link_text || '';
+        const venueStr = raw.venue || raw.stadium || '';
+
+        // Parse team names - try "Team1 vs Team2" pattern
+        let team1 = 'Team A', team2 = 'Team B';
+        const vsMatch = matchStr.match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i) ||
+                        (raw.match_link_text || '').match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i);
+        if (vsMatch) {
+          team1 = vsMatch[1].trim();
+          team2 = vsMatch[2].trim().split(/[\-•]/)[0].trim();
+        }
+
+        // Parse toss winner from toss field
+        // e.g. "Rajasthan Royals won the toss and opt to Bat"
+        let tossResult = null;
+        if (raw.toss && raw.toss !== 'Toss not announced') {
+          const tossWinner = raw.toss.match(/^([^w]+)\s+won the toss/i);
+          if (tossWinner) {
+            const winner = tossWinner[1].trim();
+            // Try to match to team1/team2 abbreviation or name
+            if (winner.toLowerCase().includes(team1.toLowerCase()) ||
+                team1.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w))) {
+              tossResult = team1;
+            } else if (winner.toLowerCase().includes(team2.toLowerCase()) ||
+                team2.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w))) {
+              tossResult = team2;
+            } else {
+              // keep full winner name
+              tossResult = winner;
+            }
+          }
+        }
+
+        // Parse date/time to timestamp
+        let matchTimestamp = now + (idx + 1) * 3 * 60 * 60 * 1000; // fallback: future slots
+        if (raw.date && raw.time) {
+          try {
+            const timeStr = raw.time.split(',')[0].trim(); // "3:30 PM LOCAL"
+            const timeOnly = timeStr.replace(' LOCAL','').trim();
+            const dateStr = raw.date === 'Today' ? new Date().toDateString() : raw.date;
+            const parsed = new Date(dateStr + ' ' + timeOnly);
+            if (!isNaN(parsed)) matchTimestamp = parsed.getTime();
+          } catch(e) {}
+        }
+
+        const status = tossResult ? 'live' :
+          (matchTimestamp < now - 60 * 60 * 1000) ? 'live' : 'upcoming';
+        const marketOpen = !tossResult && status === 'upcoming' &&
+          (matchTimestamp - now) > 30 * 60 * 1000;
+
+        return {
+          id: 'm_' + idx + '_' + (raw.match || '').replace(/[^a-z0-9]/gi, '').slice(0, 12),
+          team1, team2,
+          flag1: '🏏', flag2: '🏏',
+          league: raw.series || 'Cricket',
+          series: raw.series || '',
+          time: matchTimestamp,
+          status,
+          tossResult,
+          toss: raw.toss || '',
+          totalBets: 0,
+          marketOpen,
+          // match details
+          venue: venueStr,
+          stadium: raw.stadium || '',
+          city: raw.city || '',
+          capacity: raw.capacity || '',
+          ends: raw.ends || '',
+          umpires: raw.umpires || '',
+          referee: raw.referee || '',
+          date: raw.date || '',
+          matchTime: raw.time || '',
+        };
+      })
+      .filter(m => {
+        // Keep within next 48h IST or live/completed
+        if (m.status === 'live' || m.status === 'completed') return true;
+        const matchIST = (m.time || 0) + IST_OFFSET;
+        return matchIST <= cutoffIST;
+      });
+  } catch (err) {
+    console.error('Failed to load matches.json:', err);
+    return [];
+  }
+}
+
+// =====================================================================
+// STATE
+// =====================================================================
+let currentUser = null;
+let matchFilter = 'all';
+let sessionStart = Date.now();
+let sessionInterval = null;
+let betModalData = null;
+let currentLang = 'en';
+let qrDataURL = null;
+let refreshInterval = null;
+let refreshCountdown = 20;
+let depScreenshot = null;
+let selectedBankId = null;
+
+// =====================================================================
+// LOADER
+// =====================================================================
+window.addEventListener('load', () => {
+  initDB();
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hide');
+    checkMaintenance();
+  }, 1600);
+  // login enter key
+  document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  // close notif on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#notifPanel') && !e.target.closest('#notifBell')) document.getElementById('notifPanel').classList.add('hidden');
+  });
+});
+
+// =====================================================================
+// VIEWS
+// =====================================================================
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showSection(sec) {
+  document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('section-'+sec).classList.add('active');
+  const nl = document.getElementById('nav-'+sec);
+  if (nl) nl.classList.add('active');
+  if (sec==='home') { renderMatches(); startRefreshTimer(); }
+  else stopRefreshTimer();
+  if (sec==='wallet') refreshWallet();
+  if (sec==='bets') renderMyBets('all');
+  if (sec==='promo') renderPromo();
+  if (sec==='profile') renderProfile();
+  if (sec==='support') renderSupport();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+// =====================================================================
+// MAINTENANCE
+// =====================================================================
+function checkMaintenance() {
+  const m = DB.get('maintenance');
+  if (m) document.getElementById('maintenanceOverlay').classList.add('active');
+  else document.getElementById('maintenanceOverlay').classList.remove('active');
+}
+
+// =====================================================================
+// NOTIFICATIONS
+// =====================================================================
+function addNotification(userId, title, body) {
+  const notifs = DB.get('notifications') || [];
+  notifs.unshift({ id:'n'+Date.now(), userId, title, body, time:new Date().toLocaleString(), read:false });
+  DB.set('notifications', notifs.slice(0,50));
+}
+
+function renderNotifications() {
+  if (!currentUser) return;
+  const notifs = (DB.get('notifications')||[]).filter(n => n.userId===currentUser.id || n.userId==='all');
+  const unread = notifs.filter(n => !n.read).length;
+  const dot = document.getElementById('notifDot');
+  dot.classList.toggle('show', unread > 0);
+  const list = document.getElementById('notifList');
+  list.innerHTML = notifs.length ? notifs.map(n => `<div class="notif-item ${n.read?'':'unread'}"><div class="notif-title">${n.title}</div><div class="notif-body">${n.body}</div><div class="notif-time">${n.time}</div></div>`).join('') : '<div class="fs-12 text-muted" style="padding:16px;">No notifications</div>';
+}
+
+function toggleNotifPanel() {
+  const p = document.getElementById('notifPanel');
+  p.classList.toggle('hidden');
+  renderNotifications();
+}
+
+function markAllRead() {
+  if (!currentUser) return;
+  const notifs = DB.get('notifications') || [];
+  notifs.forEach(n => { if(n.userId===currentUser.id || n.userId==='all') n.read=true; });
+  DB.set('notifications', notifs);
+  renderNotifications();
+}
+
+// =====================================================================
+// LANGUAGE
+// =====================================================================
+const LANG = {
+  en: { home:'🏏 Matches', wallet:'🪙 Coins', bets:'🎫 My Bets', promo:'🎁 Promos', profile:'👤 Profile', support:'💬 Support' },
+  hi: { home:'🏏 मैच', wallet:'🪙 कॉइन', bets:'🎫 मेरे बेट', promo:'🎁 प्रमोशन', profile:'👤 प्रोफाइल', support:'💬 सहायता' }
+};
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('langEN').classList.toggle('active', lang==='en');
+  document.getElementById('langHI').classList.toggle('active', lang==='hi');
+  const l = LANG[lang];
+  ['home','wallet','bets','promo','profile','support'].forEach(k => {
+    const el = document.getElementById('nav-'+k);
+    if (el) el.textContent = l[k];
+  });
+  toast(lang==='hi' ? 'हिंदी सेट की गई' : 'Language set to English', 'success');
+}
+
+// =====================================================================
+// AUTH - REGISTER
+// =====================================================================
+function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const referral = document.getElementById('reg-referral').value.trim();
+  const ageChecked = document.getElementById('ageCheck').checked;
+  if (!username || !phone || !password) return toast('All fields required', 'danger');
+  if (!/^[a-zA-Z0-9]+$/.test(username)) return toast('Username: letters and numbers only', 'danger');
+  if (username.length < 3) return toast('Username min 3 characters', 'danger');
+  if (!/^\d{10}$/.test(phone)) return toast('Enter valid 10-digit phone', 'danger');
+  if (password.length < 6) return toast('Password min 6 characters', 'danger');
+  if (!ageChecked) return toast('Please confirm age and accept terms', 'danger');
+  const users = DB.get('users');
+  if (users.find(u => u.username.toLowerCase()===username.toLowerCase())) return toast('Username already taken', 'danger');
+  if (users.find(u => u.phone===phone)) return toast('Phone already registered', 'danger');
+
+  let bonus = 100;
+  let refUser = null;
+  if (referral) {
+    refUser = users.find(u => u.referralCode===referral.toUpperCase());
+    if (refUser) bonus += 100;
+  }
+
+  const newUser = {
+    id: 'u'+Date.now(), username, phone, password,
+    balance: bonus, bonusBalance: 0, totalWagered: 0, totalDeposited: 0, totalWon: 0,
+    joinDate: new Date().toLocaleDateString(), vip: 'Bronze',
+    referralCode: username.toUpperCase().slice(0,3) + Math.floor(Math.random()*900+100),
+    referrals: 0, referralBonus: 0, loginHistory: [], blocked: false, selfExcluded: false,
+    usedPromoCodes: [], lastCheckin: null, checkinDay: 0, lastSpin: null
+  };
+
+  if (refUser) {
+    refUser.referrals = (refUser.referrals||0) + 1;
+    refUser.referralBonus = (refUser.referralBonus||0) + 100;
+    refUser.balance += 100;
+    addNotification(refUser.id, '👥 Referral Bonus!', `${username} joined using your referral! 🪙100 bonus added.`);
+  }
+
+  users.push(newUser);
+  if (refUser) { const idx = users.findIndex(u => u.id===refUser.id); users[idx] = refUser; }
+  DB.set('users', users);
+  currentUser = newUser;
+  toast('Welcome to BetVibe! 🎉 ' + bonus + ' coins added!', 'success');
+  loadApp();
+}
+
+// =====================================================================
+// AUTH - LOGIN
+// =====================================================================
+function doLogin() {
+  const input = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const users = DB.get('users');
+  const user = users.find(u => (u.username.toLowerCase()===input.toLowerCase() || u.phone===input) && u.password===pass);
+  if (!user) return toast('Invalid credentials', 'danger');
+  if (user.blocked) return toast('Account blocked. Contact support.', 'danger');
+  if (user.selfExcluded) return toast('Account self-excluded. Contact support.', 'danger');
+  user.loginHistory = user.loginHistory || [];
+  user.loginHistory.unshift({ time:new Date().toLocaleString(), device:'Web Browser' });
+  if (user.loginHistory.length > 5) user.loginHistory = user.loginHistory.slice(0,5);
+  DB.set('users', users);
+  currentUser = user;
+  loadApp();
+}
+
+function loadApp() {
+  checkMaintenance();
+  showView('view-app');
+  updateNavUser();
+  showSection('home');
+  startSessionTimer();
+  renderNotifications();
+  document.getElementById('chatFloat').style.display = 'block';
+}
+
+function updateNavUser() {
+  if (!currentUser) return;
+  document.getElementById('navBalance').textContent = currentUser.balance.toFixed(0);
+  document.getElementById('navAvatar').textContent = currentUser.username[0].toUpperCase();
+}
+
+function doLogout() {
+  currentUser = null;
+  stopRefreshTimer();
+  clearInterval(sessionInterval);
+  document.getElementById('chatFloat').style.display = 'none';
+  showView('view-login');
+}
+
+function startSessionTimer() {
+  sessionStart = Date.now();
+  clearInterval(sessionInterval);
+  sessionInterval = setInterval(() => {
+    const secs = Math.floor((Date.now()-sessionStart)/1000);
+    const m = String(Math.floor(secs/60)).padStart(2,'0');
+    const s = String(secs%60).padStart(2,'0');
+    const el = document.getElementById('sessionTimer');
+    if (el) el.textContent = m+':'+s;
+  }, 1000);
+}
+
+// =====================================================================
+// MATCHES
+// =====================================================================
+function startRefreshTimer() {
+  stopRefreshTimer();
+  refreshCountdown = 20;
+  refreshInterval = setInterval(() => {
+    refreshCountdown--;
+    const el = document.getElementById('refreshCountdown');
+    if (el) el.textContent = refreshCountdown;
+    if (refreshCountdown <= 0) {
+      refreshCountdown = 20;
+      fetchAndRenderMatches();
+    }
+  }, 1000);
+}
+
+function stopRefreshTimer() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = null;
+}
+
+function fetchAndRenderMatches() {
+  autoUpdateMatchStatuses();
+  autoSettleToss();
+  renderMatches();
+}
+
+function autoUpdateMatchStatuses() {
+  const matches = DB.get('matches');
+  const now = Date.now();
+  let changed = false;
+  matches.forEach(m => {
+    if (m.status==='upcoming' && now >= m.time) { m.status='live'; m.marketOpen=false; changed=true; }
+    if (m.status==='upcoming' && (m.time-now) <= 30*60*1000) { m.marketOpen=false; changed=true; }
+  });
+  if (changed) DB.set('matches', matches);
+}
+
+function autoSettleToss() {
+  // Simulate toss win.py: check live matches without result and auto-settle based on stored data
+  // In production this would call the Python script result
+  // For now just processes any pre-set toss results stored by admin
+}
+
+function getTeamLogo(teamName) {
+  const logos = {
+    'India':'https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/40px-Flag_of_India.svg.png',
+    'Australia':'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Flag_of_Australia_%28converted%29.svg/40px-Flag_of_Australia_%28converted%29.svg.png',
+    'Pakistan':'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Flag_of_Pakistan.svg/40px-Flag_of_Pakistan.svg.png',
+    'England':'https://upload.wikimedia.org/wikipedia/en/thumb/b/be/Flag_of_England.svg/40px-Flag_of_England.svg.png',
+    'South Africa':'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Flag_of_South_Africa.svg/40px-Flag_of_South_Africa.svg.png',
+    'New Zealand':'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Flag_of_New_Zealand.svg/40px-Flag_of_New_Zealand.svg.png',
+    'West Indies':'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/WestIndiesCricketFlagPre1999.svg/40px-WestIndiesCricketFlagPre1999.svg.png',
+    'Sri Lanka':'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Flag_of_Sri_Lanka.svg/40px-Flag_of_Sri_Lanka.svg.png',
+    'Bangladesh':'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Flag_of_Bangladesh.svg/40px-Flag_of_Bangladesh.svg.png',
+    'Afghanistan':'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Flag_of_the_Taliban.svg/40px-Flag_of_the_Taliban.svg.png',
+  };
+  return logos[teamName] || null;
+}
+
+function renderTeamBlock(name, flag) {
+  const logo = getTeamLogo(name);
+  const imgHTML = logo ? `<img src="${logo}" class="team-logo" onerror="this.style.display='none';this.nextSibling.style.display='block';"><div class="team-flag" style="display:none;">${flag}</div>` : `<div class="team-flag">${flag}</div>`;
+  return `<div class="team-block">${imgHTML}<div class="team-name">${name}</div></div>`;
+}
+
+// =====================================================================
+// MATCH DETAILS MODAL
+// =====================================================================
+function showMatchDetails(matchId) {
+  const matches = DB.get('matches') || [];
+  const m = matches.find(x => x.id === matchId);
+  if (!m) return;
+  const details = [
+    ['🏟️ Venue', m.venue || m.stadium || '—'],
+    ['🏙️ City', m.city || '—'],
+    ['👥 Capacity', m.capacity ? Number(m.capacity).toLocaleString() : '—'],
+    ['🏏 Ends', m.ends || '—'],
+    ['👁️ Umpires', m.umpires || '—'],
+    ['⚖️ Referee', m.referee || '—'],
+    ['📅 Date', m.date || new Date(m.time).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})],
+    ['⏰ Time', m.matchTime || new Date(m.time).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})],
+    ['🎯 Toss', m.toss || (m.tossResult ? m.tossResult + ' won the toss' : 'Not announced')],
+    ['📡 Series', m.series || m.league || '—'],
+  ];
+  document.getElementById('matchDetailTitle').textContent = (m.team1 || '') + ' vs ' + (m.team2 || '');
+  document.getElementById('matchDetailSubtitle').textContent = m.league || m.series || '';
+  document.getElementById('matchDetailRows').innerHTML = details.map(([k,v]) =>
+    `<div class="info-row"><span class="info-lbl">${k}</span><span class="info-val" style="text-align:right;max-width:60%;">${v}</span></div>`
+  ).join('');
+  openModal('matchDetailModal');
+}
+
+function renderMatches() {
+  let matches = DB.get('matches') || [];
+
+  // IST = UTC+5:30
+  const now = Date.now();
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+  const nowIST = now + IST_OFFSET;
+  const cutoffIST = nowIST + 48 * 60 * 60 * 1000;
+
+  // Filter: show only matches within next 48 hours IST (or already live/completed)
+  matches = matches.filter(m => {
+    if (m.status === 'live' || m.status === 'completed') return true;
+    const matchIST = (m.time || 0) + IST_OFFSET;
+    return matchIST <= cutoffIST && matchIST >= (nowIST - 6 * 60 * 60 * 1000); // also show matches from last 6h
+  });
+
+  document.getElementById('heroLiveCount').textContent = matches.filter(m => m.status === 'live').length;
+  document.getElementById('heroUpcomingCount').textContent = matches.filter(m => m.status === 'upcoming').length;
+
+  let filtered = matchFilter === 'all' ? matches : matches.filter(m => m.status === matchFilter);
+  const limits = DB.get('betLimits') || { min: 100, max: 10000 };
+  const grid = document.getElementById('matchesGrid');
+
+  grid.innerHTML = filtered.map(m => {
+    const timeLeft = m.time - now;
+    const mins = Math.floor(timeLeft / 60000);
+    const timeStr = m.status === 'live' ? '🔴 LIVE' :
+      m.status === 'completed' ? 'COMPLETED' :
+      mins <= 0 ? 'Started' :
+      mins <= 30 ? `${mins}m (Closed)` :
+      new Date(m.time).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const badgeCls = m.status === 'live' ? 'badge-live' : m.status === 'upcoming' ? 'badge-upcoming' : m.status === 'completed' ? 'badge-done' : 'badge-closed';
+    const canBet = m.marketOpen && m.status === 'upcoming' && !m.tossResult;
+    const hasDetails = m.venue || m.stadium || m.umpires || m.city;
+
+    return `<div class="match-card">
+      <div class="match-top">
+        <div class="match-league">${m.league || m.series || ''}</div>
+        <div class="match-badge ${badgeCls}">${timeStr}</div>
+      </div>
+      <div class="teams-row">
+        ${renderTeamBlock(m.team1, m.flag1 || '🏏')}
+        <div class="vs-orb">VS</div>
+        ${renderTeamBlock(m.team2, m.flag2 || '🏏')}
+      </div>
+      ${m.tossResult ? `<div class="toss-result">🏏 Toss Won: ${m.tossResult}</div>` : ''}
+      ${m.toss && !m.tossResult ? `<div style="font-size:11px;color:var(--muted);text-align:center;margin:6px 0;">🎯 ${m.toss}</div>` : ''}
+      ${canBet ? `<div class="bet-row">
+        <div class="bet-btn" onclick="openBetModal('${m.id}','${m.team1}')">
+          <div class="bet-team">${m.team1}</div>
+          <div class="bet-odd">1.95x</div>
+        </div>
+        <div class="bet-btn" onclick="openBetModal('${m.id}','${m.team2}')">
+          <div class="bet-team">${m.team2}</div>
+          <div class="bet-odd">1.95x</div>
+        </div>
+      </div>
+      <div class="fs-12 text-muted text-center mt-8">Min: 🪙${limits.min} | Max: 🪙${limits.max}</div>` :
+        `<div class="match-locked">${m.status === 'completed' ? '✅ Match Completed' : m.status === 'live' ? '⏳ Awaiting Toss Settlement' : '🔒 Betting Closed'}</div>`}
+      <div class="match-footer">
+        <span>🎫 Bets: ${m.totalBets || 0}</span>
+        ${hasDetails ? `<span style="color:var(--blue-light);cursor:pointer;font-size:11px;" onclick="showMatchDetails('${m.id}')">ℹ️ Details</span>` : ''}
+        <span>${m.venue ? '📍 ' + (m.city || m.venue) : new Date(m.time).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (!filtered.length) grid.innerHTML = '<div class="text-center text-muted fs-13 mt-20" style="grid-column:1/-1;">No matches in next 48 hours. Admin can fetch latest matches from the admin panel.</div>';
+}
+
+function filterMatches(f, el) {
+  matchFilter = f;
+  document.querySelectorAll('#section-home .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderMatches();
+}
+
+// =====================================================================
+// BET MODAL
+// =====================================================================
+function openBetModal(matchId, team) {
+  if (!currentUser) return toast('Please login first', 'danger');
+  const matches = DB.get('matches');
+  const match = matches.find(m => m.id===matchId);
+  if (!match || !match.marketOpen) return toast('Market is closed', 'danger');
+  const limits = DB.get('betLimits') || { min:100, max:10000 };
+  betModalData = { match, team };
+
+  document.getElementById('betModalContent').innerHTML = `
+    <div class="text-center mb-16">
+      <div class="fs-13 text-muted mb-4">${match.team1} vs ${match.team2}</div>
+      <div style="font-family:'Exo 2',sans-serif;font-size:22px;font-weight:800;color:var(--accent);">Backing: ${team}</div>
+      <div class="badge badge-warning mt-4">Odds: 1.95x</div>
+    </div>
+    <div class="info-row"><span class="info-lbl">Your Coins</span><span class="info-val text-accent">🪙 ${currentUser.balance.toFixed(0)}</span></div>
+    <div class="form-grp mt-16"><label class="form-lbl">Bet Amount (Min 🪙${limits.min} | Max 🪙${limits.max})</label>
+      <input type="number" id="betAmount" class="form-inp" placeholder="Enter amount" min="${limits.min}" max="${Math.min(limits.max,currentUser.balance)}" oninput="calcWin(this.value)">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      ${[100,200,500,1000].map(v=>`<button class="btn btn-outline btn-sm" onclick="document.getElementById('betAmount').value=${v};calcWin(${v});">🪙${v}</button>`).join('')}
+    </div>
+    <div class="card" style="background:var(--bg3);margin:12px 0;">
+      <div class="flex-between fs-13"><span class="text-muted">Stake</span><span id="stakeDisp">🪙 0</span></div>
+      <div class="flex-between fs-13 mt-4"><span class="text-muted">Odds</span><span>1.95x</span></div>
+      <div class="flex-between mt-8"><span class="text-muted fs-13">Potential Win</span><span style="font-family:'Exo 2',sans-serif;font-size:22px;font-weight:800;color:var(--green);" id="winDisp">🪙 0</span></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="confirmBet()">Confirm Bet on ${team}</button>
+    <p class="fs-12 text-muted text-center mt-8">Bets are final once confirmed.</p>
+  `;
+  openModal('betModal');
+}
+
+function calcWin(v) {
+  const s = parseFloat(v)||0;
+  document.getElementById('stakeDisp').textContent = '🪙 '+s.toFixed(0);
+  document.getElementById('winDisp').textContent = '🪙 '+(s*1.95).toFixed(2);
+}
+
+function confirmBet() {
+  const limits = DB.get('betLimits') || { min:100, max:10000 };
+  const amt = parseFloat(document.getElementById('betAmount').value);
+  if (!amt || amt < limits.min) return toast(`Minimum bet is 🪙${limits.min}`, 'danger');
+  if (amt > limits.max) return toast(`Maximum bet is 🪙${limits.max}`, 'danger');
+  if (amt > currentUser.balance) return toast('Insufficient coins', 'danger');
+
+  const { match, team } = betModalData;
+  const users = DB.get('users');
+  const user = users.find(u => u.id===currentUser.id);
+  user.balance -= amt;
+  user.totalWagered = (user.totalWagered||0) + amt;
+  updateVIP(user);
+
+  const bets = DB.get('bets');
+  bets.push({ id:'b'+Date.now(), userId:currentUser.id, username:currentUser.username, matchId:match.id, matchName:match.team1+' vs '+match.team2, team, amount:amt, odds:1.95, potential:+(amt*1.95).toFixed(2), status:'pending', date:new Date().toLocaleString() });
+
+  const matches = DB.get('matches');
+  const mIdx = matches.findIndex(m => m.id===match.id);
+  matches[mIdx].totalBets = (matches[mIdx].totalBets||0) + 1;
+
+  DB.set('users', users); DB.set('bets', bets); DB.set('matches', matches);
+  currentUser = user;
+  updateNavUser();
+  closeModal('betModal');
+  toast(`Bet of 🪙${amt} placed on ${team}! Good luck! 🤞`, 'success');
+  renderMatches();
+}
+
+function updateVIP(user) {
+  const w = user.totalWagered||0;
+  if (w>=100000) user.vip='Diamond';
+  else if (w>=25000) user.vip='Gold';
+  else if (w>=5000) user.vip='Silver';
+  else user.vip='Bronze';
+}
+
+// =====================================================================
+// WALLET
+// =====================================================================
+function walTab(tab, el) {
+  document.getElementById('walletDeposit').classList.add('hidden');
+  document.getElementById('walletWithdraw').classList.add('hidden');
+  document.getElementById('walletHistory').classList.add('hidden');
+  document.getElementById('walletTabBar').style.display = 'flex';
+  document.querySelectorAll('#walletTabBar .tab').forEach(t=>t.classList.remove('active'));
+  if (tab==='deposit') { document.getElementById('walletDeposit').classList.remove('hidden'); document.getElementById('wt-deposit').classList.add('active'); }
+  if (tab==='withdraw') { document.getElementById('walletWithdraw').classList.remove('hidden'); document.getElementById('wt-withdraw').classList.add('active'); }
+  if (tab==='history') { document.getElementById('walletHistory').classList.remove('hidden'); document.getElementById('wt-history').classList.add('active'); historyTab('deposits', document.querySelector('#walletHistory .tab')); }
+}
+
+function refreshWallet() {
+  const users = DB.get('users');
+  const user = users.find(u => u.id===currentUser.id);
+  currentUser = user;
+  document.getElementById('walMainBal').textContent = user.balance.toFixed(0);
+  document.getElementById('walBonusBal').textContent = (user.bonusBalance||0).toFixed(0);
+  document.getElementById('walWagered').textContent = (user.totalWagered||0).toFixed(0);
+  const needed = (user.totalDeposited||0) * 0.7;
+  const done = user.totalWagered||0;
+  const pct = needed > 0 ? Math.min(100,(done/needed)*100) : 100;
+  if (needed > 0) {
+    document.getElementById('wagerProgress').style.display = 'block';
+    document.getElementById('wagerFill').style.width = pct+'%';
+    document.getElementById('wagerPct').textContent = pct.toFixed(0)+'%';
+    document.getElementById('wagerDone').textContent = '🪙'+done.toFixed(0)+' wagered';
+    document.getElementById('wagerNeeded').textContent = '🪙'+needed.toFixed(0)+' required';
+  }
+  renderDepositBanks();
+  renderDepositCoupons();
+  updateNavUser();
+  // show deposit by default
+  document.getElementById('walletDeposit').classList.remove('hidden');
+  document.getElementById('walletWithdraw').classList.add('hidden');
+  document.getElementById('walletHistory').classList.add('hidden');
+}
+
+function renderDepositBanks() {
+  const banks = (DB.get('bankAccounts')||[]).filter(b=>b.active);
+  const qrData = DB.get('qrData')||{};
+  const el = document.getElementById('depositBankList');
+  if (!banks.length) { el.innerHTML = '<div class="alert alert-warn">No bank accounts configured. Contact admin.</div>'; return; }
+  el.innerHTML = '<div class="sec-title" style="font-size:15px;">🏦 Select Bank</div>' +
+    banks.map(b => `<div class="bank-card" onclick="selectBank('${b.id}')">
+      <div class="bank-name">${b.bank} — ${b.name}</div>
+      <div class="bank-detail">Account: ${b.num} | IFSC: ${b.ifsc}</div>
+      ${b.upi ? `<div class="bank-detail">UPI: ${b.upi}</div>` : ''}
+      ${qrData[b.id] ? `<img src="${qrData[b.id]}" class="qr-img">` : ''}
+    </div>`).join('');
+}
+
+function selectBank(id) {
+  selectedBankId = id;
+  document.querySelectorAll('.bank-card').forEach(c=>c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  document.getElementById('depositForm').classList.remove('hidden');
+}
+
+function renderDepositCoupons() {
+  const coupons = DB.get('depositCoupons')||[];
+  const el = document.getElementById('depositCouponInfo');
+  if (coupons.length) {
+    el.classList.remove('hidden');
+    el.textContent = '🎁 Bonus: ' + coupons.map(c=>`Deposit ₹${c.amount} → +🪙${c.bonus}`).join(' | ');
+  }
+}
+
+function handleDepScreenshot(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => { depScreenshot = e.target.result; document.getElementById('depFileName').textContent = '✅ '+input.files[0].name; };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function submitDeposit() {
+  const amount = parseFloat(document.getElementById('depAmount').value);
+  const utr = document.getElementById('depUTR').value.trim();
+  if (!amount || amount < 300) return toast('Minimum deposit is ₹300', 'danger');
+  if (!utr) return toast('UTR reference required', 'danger');
+  if (!selectedBankId) return toast('Please select a bank account', 'danger');
+
+  const coupons = DB.get('depositCoupons')||[];
+  const match = coupons.find(c => c.amount<=amount).sort ? coupons.filter(c=>c.amount<=amount).sort((a,b)=>b.amount-a.amount)[0] : coupons.filter(c=>c.amount<=amount).pop();
+  const couponBonus = match ? match.bonus : 0;
+
+  const deps = DB.get('deposits');
+  deps.push({ id:'d'+Date.now(), userId:currentUser.id, username:currentUser.username, amount, utr, screenshot:depScreenshot?'[Uploaded]':'None', bankId:selectedBankId, couponBonus, status:'pending', date:new Date().toLocaleString() });
+  DB.set('deposits', deps);
+  depScreenshot = null;
+  document.getElementById('depAmount').value = '';
+  document.getElementById('depUTR').value = '';
+  document.getElementById('depFileName').textContent = '';
+  document.getElementById('depositForm').classList.add('hidden');
+  toast('Deposit request submitted! Approval within 1-2 hours.', 'success');
+}
+
+function submitWithdrawal() {
+  const amount = parseFloat(document.getElementById('wdAmount').value);
+  const name = document.getElementById('wdName').value.trim();
+  const accNum = document.getElementById('wdAccNum').value.trim();
+  const ifsc = document.getElementById('wdIfsc').value.trim();
+  const bank = document.getElementById('wdBank').value.trim();
+  const wdPass = document.getElementById('wdPass').value;
+  if (!amount || amount < 300) return toast('Minimum withdrawal ₹300', 'danger');
+  if (!name || !accNum || !ifsc || !bank) return toast('Fill all bank details', 'danger');
+  if (!wdPass) return toast('Withdrawal password required', 'danger');
+  if (!currentUser.wdPassword) return toast('Set withdrawal password first', 'danger');
+  if (wdPass !== currentUser.wdPassword) return toast('Wrong withdrawal password', 'danger');
+  if (currentUser.balance < amount) return toast('Insufficient balance', 'danger');
+  const needed = (currentUser.totalDeposited||0) * 0.7;
+  if ((currentUser.totalWagered||0) < needed) return toast(`Complete wagering: 🪙${needed.toFixed(0)} required`, 'danger');
+
+  const wds = DB.get('withdrawals');
+  wds.push({ id:'w'+Date.now(), userId:currentUser.id, username:currentUser.username, amount, name, accNum, ifsc, bank, status:'pending', date:new Date().toLocaleString() });
+  DB.set('withdrawals', wds);
+  addNotification(currentUser.id, '📤 Withdrawal Requested', `Your withdrawal of ₹${amount} is under review.`);
+  toast('Withdrawal submitted! Processing within 24 hours.', 'success');
+  renderNotifications();
+}
+
+function saveWdPassword() {
+  const p1 = document.getElementById('wdPass1').value;
+  const p2 = document.getElementById('wdPass2').value;
+  if (!p1 || p1.length < 4) return toast('Min 4 characters', 'danger');
+  if (p1 !== p2) return toast('Passwords do not match', 'danger');
+  if (p1 === currentUser.password) return toast('Cannot be same as login password', 'danger');
+  const users = DB.get('users');
+  const user = users.find(u => u.id===currentUser.id);
+  user.wdPassword = p1;
+  DB.set('users', users);
+  currentUser = user;
+  closeModal('wdPassModal');
+  toast('Withdrawal password set!', 'success');
+}
+
+function historyTab(type, el) {
+  document.querySelectorAll('#walletHistory .tabs .tab').forEach(t=>t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const head = document.getElementById('histTableHead');
+  const body = document.getElementById('histTableBody');
+  if (type==='deposits') {
+    head.innerHTML = '<tr><th>Amount</th><th>UTR</th><th>Bonus</th><th>Status</th><th>Date</th></tr>';
+    const deps = (DB.get('deposits')||[]).filter(d=>d.userId===currentUser.id);
+    body.innerHTML = deps.length ? deps.map(d=>`<tr><td class="text-success">₹${d.amount}</td><td class="fs-12">${d.utr}</td><td>${d.couponBonus?'🪙'+d.couponBonus:'-'}</td><td><span class="badge badge-${d.status==='approved'?'success':d.status==='rejected'?'danger':'warning'}">${d.status}</span></td><td class="fs-12">${d.date}</td></tr>`).join('') : '<tr><td colspan="5" class="text-center text-muted">No deposits</td></tr>';
+  } else if (type==='withdrawals') {
+    head.innerHTML = '<tr><th>Amount</th><th>Bank</th><th>Status</th><th>Date</th></tr>';
+    const wds = (DB.get('withdrawals')||[]).filter(w=>w.userId===currentUser.id);
+    body.innerHTML = wds.length ? wds.map(w=>`<tr><td class="text-danger">₹${w.amount}</td><td class="fs-12">${w.bank}</td><td><span class="badge badge-${w.status==='approved'?'success':w.status==='rejected'?'danger':'warning'}">${w.status}</span></td><td class="fs-12">${w.date}</td></tr>`).join('') : '<tr><td colspan="4" class="text-center text-muted">No withdrawals</td></tr>';
+  } else if (type==='bets') {
+    head.innerHTML = '<tr><th>Match</th><th>Team</th><th>Coins</th><th>Status</th><th>Date</th></tr>';
+    const bets = (DB.get('bets')||[]).filter(b=>b.userId===currentUser.id);
+    body.innerHTML = bets.length ? bets.map(b=>`<tr><td>${b.matchName}</td><td>${b.team}</td><td>🪙${b.amount}</td><td><span class="badge badge-${b.status==='won'?'success':b.status==='lost'?'danger':'warning'}">${b.status}</span></td><td>${b.date}</td></tr>`).join('') : '<tr><td colspan="5" class="text-center text-muted">No bets</td></tr>';
+  } else if (type==='pnl') {
+    head.innerHTML = '<tr><th>Match</th><th>Team</th><th>Bet</th><th>Result</th><th>P&L</th></tr>';
+    const bets = (DB.get('bets')||[]).filter(b=>b.userId===currentUser.id && b.status!=='pending');
+    body.innerHTML = bets.length ? bets.map(b => {
+      const pnl = b.status==='won' ? +(b.amount*0.95).toFixed(2) : -b.amount;
+      return `<tr><td>${b.matchName}</td><td>${b.team}</td><td>🪙${b.amount}</td><td><span class="badge badge-${b.status==='won'?'success':'danger'}">${b.status}</span></td><td class="${pnl>0?'text-success':'text-danger'}">${pnl>0?'+':''}🪙${pnl}</td></tr>`;
+    }).join('') : '<tr><td colspan="5" class="text-center text-muted">No settled bets</td></tr>';
+  }
+}
+
+// =====================================================================
+// MY BETS
+// =====================================================================
+function renderMyBets(filter) {
+  const bets = (DB.get('bets')||[]).filter(b=>b.userId===currentUser.id);
+  const filtered = filter==='all' ? bets : bets.filter(b=>b.status===filter);
+  const body = document.getElementById('myBetsTable');
+  body.innerHTML = filtered.length ? filtered.map(b=>`<tr>
+    <td>${b.matchName}</td>
+    <td><span class="fw-600">${b.team}</span></td>
+    <td>🪙${b.amount}</td>
+    <td class="text-success">🪙${b.potential}</td>
+    <td><span class="badge badge-${b.status==='won'?'success':b.status==='lost'?'danger':'warning'}">${b.status}</span></td>
+    <td class="fs-12">${b.date}</td>
+  </tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted">No bets found</td></tr>';
+}
+
+function betsTab(filter, el) {
+  document.querySelectorAll('#section-bets .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderMyBets(filter);
+}
+
+// =====================================================================
+// PROMOS
+// =====================================================================
+function renderPromo() {
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===currentUser.id);
+  document.getElementById('refCode').textContent = user.referralCode || 'BVXXX';
+  document.getElementById('refCount').textContent = user.referrals||0;
+  document.getElementById('refBonus').textContent = user.referralBonus||0;
+
+  const rewards = [10,20,30,50,75,100,200];
+  const day = user.checkinDay||0;
+  document.getElementById('checkinGrid').innerHTML = rewards.map((r,i) => `<div class="checkin-day" style="background:${i<day?'rgba(0,200,83,0.15)':'var(--bg3)'};border-color:${i===day?'var(--blue-mid)':'var(--border)'};">
+    <div class="fs-11 fw-600" style="color:${i<day?'var(--green)':i===day?'var(--blue-light)':'var(--muted)'};">D${i+1}</div>
+    <div class="fs-11" style="color:var(--muted);">🪙${r}</div>
+  </div>`).join('');
+
+  const allUsers = (DB.get('users')||[]).sort((a,b)=>(b.totalWon||0)-(a.totalWon||0)).slice(0,10);
+  document.getElementById('leaderboard').innerHTML = allUsers.map((u,i) => `<div class="lb-row">
+    <div class="lb-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</div>
+    <div style="flex:1;"><span class="fw-600 fs-13">${u.username}</span></div>
+    <div class="text-success fs-13">🪙${(u.totalWon||0).toFixed(0)}</div>
+    <div><span class="badge vip-${(u.vip||'bronze').toLowerCase()}">${u.vip||'Bronze'}</span></div>
+  </div>`).join('') || '<div class="text-muted fs-13">No data</div>';
+}
+
+function doSpin() {
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===currentUser.id);
+  const today = new Date().toDateString();
+  if (user.lastSpin===today) return toast('Already spun today! Come back tomorrow.', 'warning');
+  const prizes = [0,10,20,50,100,0,25,0];
+  const prize = prizes[Math.floor(Math.random()*prizes.length)];
+  const wheel = document.getElementById('spinWheel');
+  wheel.style.transform = 'rotate(720deg)';
+  wheel.style.transition = 'transform 1s ease';
+  setTimeout(() => {
+    wheel.style.transform = '';
+    if (prize>0) { user.bonusBalance=(user.bonusBalance||0)+prize; toast(`🎉 You won 🪙${prize}!`, 'success'); addNotification(user.id,'🎰 Spin Win!',`You won 🪙${prize} from the daily spin!`); }
+    else toast('Better luck next time!', '');
+    user.lastSpin = today;
+    DB.set('users', users); currentUser = user;
+    document.getElementById('spinStatus').textContent = prize>0 ? `Won 🪙${prize}!` : 'Try again tomorrow!';
+    renderNotifications();
+  }, 1100);
+}
+
+function doCheckin() {
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===currentUser.id);
+  const today = new Date().toDateString();
+  const rewards = [10,20,30,50,75,100,200];
+  if (user.lastCheckin===today) return toast('Already checked in today!', 'warning');
+  const day = user.checkinDay||0;
+  const reward = rewards[day%7];
+  user.bonusBalance = (user.bonusBalance||0)+reward;
+  user.checkinDay = (day+1)%7;
+  user.lastCheckin = today;
+  DB.set('users', users); currentUser = user;
+  toast(`Day ${day+1} check-in! 🪙${reward} added!`, 'success');
+  renderPromo();
+}
+
+function copyRef() {
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===currentUser.id);
+  navigator.clipboard.writeText(user.referralCode||'').catch(()=>{});
+  toast('Referral code copied!', 'success');
+}
+
+function redeemPromo() {
+  const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+  const codes = DB.get('promoCodes');
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===currentUser.id);
+  if (!code) return toast('Enter a promo code', 'danger');
+  if (!codes[code]) return toast('Invalid promo code', 'danger');
+  if ((user.usedPromoCodes||[]).includes(code)) return toast('Already used this code', 'danger');
+  user.bonusBalance = (user.bonusBalance||0)+codes[code];
+  user.usedPromoCodes = [...(user.usedPromoCodes||[]), code];
+  DB.set('users', users); currentUser = user;
+  toast(`Redeemed! 🪙${codes[code]} bonus added!`, 'success');
+  document.getElementById('promoCodeInput').value = '';
+}
+
+// =====================================================================
+// PROFILE
+// =====================================================================
+function renderProfile() {
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===currentUser.id);
+  document.getElementById('profileAvatar').textContent = user.username[0].toUpperCase();
+  document.getElementById('profileUsername').textContent = user.username;
+  document.getElementById('profilePhone').textContent = '+91 '+user.phone;
+  document.getElementById('profileVIPBadge').innerHTML = `<span class="badge vip-${(user.vip||'bronze').toLowerCase()}">${user.vip||'Bronze'}</span>`;
+  document.getElementById('profileJoined').textContent = user.joinDate;
+  document.getElementById('profileBets').textContent = (DB.get('bets')||[]).filter(b=>b.userId===currentUser.id).length;
+  document.getElementById('profileWon').textContent = '🪙'+(user.totalWon||0).toFixed(0);
+  document.getElementById('loginHistory').innerHTML = (user.loginHistory||[]).map(l=>`<div class="info-row"><span class="info-lbl">${l.device}</span><span class="info-val fs-12">${l.time}</span></div>`).join('') || '<div class="text-muted fs-13">No history</div>';
+  if (user.bankDetails) {
+    document.getElementById('savedBankDetails').innerHTML = `<div class="info-row"><span class="info-lbl">Account</span><span class="info-val">${user.bankDetails.accNum}</span></div><div class="info-row"><span class="info-lbl">Bank</span><span class="info-val">${user.bankDetails.bank}</span></div>`;
+  } else {
+    document.getElementById('savedBankDetails').innerHTML = '<div class="text-muted fs-13">No bank details saved.</div>';
+  }
+}
+
+function changePassword() {
+  const oldPass = document.getElementById('chgOldPass').value;
+  const newPass = document.getElementById('chgNewPass').value;
+  if (!oldPass || !newPass) return toast('Fill all fields', 'danger');
+  if (oldPass !== currentUser.password) return toast('Current password incorrect', 'danger');
+  if (newPass.length < 6) return toast('New password min 6 characters', 'danger');
+  const users = DB.get('users');
+  const user = users.find(u=>u.id===currentUser.id);
+  user.password = newPass;
+  DB.set('users', users); currentUser = user;
+  toast('Password updated!', 'success');
+  document.getElementById('chgOldPass').value = '';
+  document.getElementById('chgNewPass').value = '';
+}
+
+function selfExclusion() {
+  if (confirm('Self-exclude? You cannot login until support reactivates.')) {
+    const users = DB.get('users');
+    const user = users.find(u=>u.id===currentUser.id);
+    user.selfExcluded = true;
+    DB.set('users', users);
+    doLogout();
+    toast('Self-exclusion applied.', 'warning');
+  }
+}
+
+function forgotSendOTP() {
+  const phone = document.getElementById('forgotPhone').value.trim();
+  const users = DB.get('users');
+  if (!users.find(u=>u.phone===phone)) return toast('Phone not registered', 'danger');
+  document.getElementById('forgotStep1').classList.add('hidden');
+  document.getElementById('forgotStep2').classList.remove('hidden');
+  toast('Verified! Set your new password.', 'success');
+}
+
+function forgotResetPass() {
+  const newPass = document.getElementById('forgotNewPass').value;
+  const phone = document.getElementById('forgotPhone').value.trim();
+  if (newPass.length < 6) return toast('Min 6 characters', 'danger');
+  const users = DB.get('users');
+  const user = users.find(u=>u.phone===phone);
+  user.password = newPass;
+  DB.set('users', users);
+  closeModal('forgotModal');
+  toast('Password reset successfully!', 'success');
+  document.getElementById('forgotStep1').classList.remove('hidden');
+  document.getElementById('forgotStep2').classList.add('hidden');
+}
+
+// =====================================================================
+// SUPPORT
+// =====================================================================
+function renderSupport() {
+  const links = DB.get('supportLinks')||{};
+  document.getElementById('supportLinks').innerHTML = `
+    ${links.whatsapp ? `<a href="https://wa.me/${links.whatsapp.replace(/[^0-9]/g,'')}" target="_blank" class="btn btn-success btn-block mb-8">💬 WhatsApp Support</a>` : ''}
+    ${links.telegram ? `<a href="${links.telegram.startsWith('http')?links.telegram:'https://t.me/'+links.telegram.replace('@','')}" target="_blank" class="btn btn-outline btn-block mb-8">✈️ Telegram Support</a>` : ''}
+    ${links.custom ? `<a href="${links.custom}" target="_blank" class="btn btn-outline btn-block mb-8">🔗 Contact Support</a>` : ''}
+    ${!links.whatsapp && !links.telegram && !links.custom ? '<div class="text-muted fs-13 mb-12">Support links not configured. Use ticket system below.</div>' : ''}
+  `;
+  const tickets = (DB.get('tickets')||[]).filter(t=>t.userId===currentUser.id);
+  document.getElementById('myTickets').innerHTML = tickets.length ? tickets.map(t=>`<div class="info-row"><span class="info-lbl">${t.subject}</span><span class="badge badge-${t.status==='open'?'warning':'success'}">${t.status}</span></div>`).join('') : '<div class="text-muted">No tickets submitted yet.</div>';
+}
+
+function submitTicket() {
+  const subject = document.getElementById('ticketSubject').value;
+  const msg = document.getElementById('ticketMsg').value.trim();
+  if (!msg) return toast('Please enter a message', 'danger');
+  const tickets = DB.get('tickets')||[];
+  tickets.push({ id:'t'+Date.now(), userId:currentUser.id, username:currentUser.username, subject, message:msg, status:'open', date:new Date().toLocaleString() });
+  DB.set('tickets', tickets);
+  document.getElementById('ticketMsg').value = '';
+  toast('Ticket submitted! Response within 24 hours.', 'success');
+  renderSupport();
+}
+
+function openFAQ(topic) {
+  const faqs = {
+    deposit:'To deposit: Coins → Deposit → Select bank → Send payment → Upload screenshot with UTR → Submit. Coins added after admin approval (1-2 hours).',
+    withdraw:'To withdraw: Coins → Withdraw → Enter bank details → Amount → Withdrawal password → Submit. Admin processes within 24 hours.',
+    bet:"To bet: Matches → Click odds button → Enter amount → Confirm. Market closes 30 mins before match.",
+    toss:'Toss is auto-settled every 20 seconds from live data. You get a notification when bets are settled.'
+  };
+  alert(faqs[topic]||'Contact support for help.');
+}
+
+// =====================================================================
+// CHAT
+// =====================================================================
+function toggleChat() { document.getElementById('chatWindow').classList.toggle('open'); }
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  appendChatMsg(msg,'user');
+  input.value = '';
+  setTimeout(()=>autoReply(msg), 800);
+}
+
+function chatReply(msg) { appendChatMsg(msg,'user'); setTimeout(()=>autoReply(msg),800); }
+
+function appendChatMsg(msg,type) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg '+type;
+  el.textContent = msg;
+  const msgs = document.getElementById('chatMessages');
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function autoReply(msg) {
+  const lower = msg.toLowerCase();
+  let reply = 'Thanks for reaching out! Our team will respond shortly. You can also raise a support ticket.';
+  if (lower.includes('deposit')) reply = 'For deposits: go to 🪙 Coins → Deposit, select a bank, send payment, upload screenshot with UTR. Approval within 1-2 hours.';
+  else if (lower.includes('withdraw')) reply = 'For withdrawals: 🪙 Coins → Withdraw, fill bank details and withdrawal password. Admin approves within 24 hours.';
+  else if (lower.includes('bet')) reply = 'Bets settled on official toss result. If you have a query, raise a support ticket.';
+  else if (lower.includes('balance') || lower.includes('coin')) reply = 'Your coin balance is shown at the top right. Coins credited after deposit approval.';
+  const links = DB.get('supportLinks')||{};
+  if (links.whatsapp) reply += `\n\nWhatsApp: ${links.whatsapp}`;
+  appendChatMsg(reply,'bot');
+}
+
+// =====================================================================
+// TOSS SETTLEMENT (auto runs every 20s from refresh)
+// =====================================================================
+function settleToss(matchId, winner) {
+  const matches = DB.get('matches');
+  const match = matches.find(m=>m.id===matchId);
+  if (!match || match.tossResult) return;
+  match.tossResult = winner;
+  match.status = 'completed';
+  match.marketOpen = false;
+  DB.set('matches', matches);
+
+  const bets = DB.get('bets');
+  const users = DB.get('users');
+  let settled = 0;
+  bets.filter(b=>b.matchId===matchId && b.status==='pending').forEach(b => {
+    settled++;
+    if (b.team===winner) {
+      b.status = 'won';
+      const user = users.find(u=>u.id===b.userId);
+      if (user) { user.balance+=b.potential; user.totalWon=(user.totalWon||0)+(b.potential-b.amount); }
+      addNotification(b.userId,'🎉 You Won!',`Bet on ${b.team} for ${b.matchName} won! 🪙${b.potential} credited.`);
+    } else {
+      b.status = 'lost';
+      addNotification(b.userId,'😔 Bet Lost',`Bet on ${b.team} for ${b.matchName} lost. Better luck next time!`);
+    }
+  });
+  DB.set('bets', bets); DB.set('users', users);
+
+  const logs = DB.get('settleLogs')||[];
+  logs.unshift({ match:`${match.team1} vs ${match.team2}`, winner, settled, time:new Date().toLocaleString() });
+  DB.set('settleLogs', logs.slice(0,20));
+
+  if (currentUser) { renderMatches(); renderNotifications(); updateNavUser(); }
+  return settled;
+}
+// Auto-refresh matches from server every 60s and auto-settle from toss field
+setInterval(async () => {
+  const data = await getDefaultMatches();
+  if (data && data.length) {
+    // Merge: preserve bet counts, only update match metadata and toss results
+    const existing = DB.get('matches') || [];
+    const merged = data.map(fresh => {
+      const old = existing.find(e => e.id === fresh.id);
+      if (old) {
+        fresh.totalBets = old.totalBets || 0;
+        // If toss result newly arrived from JSON, settle bets
+        if (fresh.tossResult && !old.tossResult) {
+          settleToss(fresh.id, fresh.tossResult);
+        }
+      }
+      return fresh;
+    });
+    DB.set('matches', merged);
+    renderMatches();
+  }
+}, 60000);
+</script>
+</body>
+</html>
