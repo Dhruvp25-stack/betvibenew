@@ -1,12 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
 import json
+import re
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # =====================================================
 # CONFIG
 # =====================================================
+
 BASE_URL = "https://www.cricbuzz.com"
 SCHEDULE_URL = f"{BASE_URL}/cricket-schedule/upcoming-series/all"
 
@@ -14,74 +17,134 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
 
+IST = ZoneInfo("Asia/Kolkata")
+
 # =====================================================
-# GET ALL MATCH LINKS
+# HELPERS
 # =====================================================
-print("Opening Cricbuzz schedule page...")
 
-response = requests.get(SCHEDULE_URL, headers=HEADERS, timeout=20)
-response.raise_for_status()
+def clean_text(text):
+    return re.sub(r"\s+", " ", text).strip()
 
-soup = BeautifulSoup(response.text, "html.parser")
 
-links = soup.find_all("a")
+def unique_list(items):
+    seen = set()
+    output = []
+
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            output.append(item)
+
+    return output
+
+
+def convert_to_ist(date_text, time_text):
+    """
+    Try converting Cricbuzz date/time to IST.
+    If parsing fails, return original values.
+    """
+
+    raw = f"{date_text} {time_text}".strip()
+
+    patterns = [
+        "%a, %d %b %Y %I:%M %p",
+        "%d %b %Y %I:%M %p",
+        "%a, %d %b %Y %H:%M",
+        "%d %b %Y %H:%M",
+    ]
+
+    for fmt in patterns:
+        try:
+            dt = datetime.strptime(raw, fmt)
+
+            # Assume Cricbuzz time already in IST
+            dt = dt.replace(tzinfo=IST)
+
+            return {
+                "date_ist": dt.strftime("%d-%m-%Y"),
+                "time_ist": dt.strftime("%I:%M %p"),
+                "day_ist": dt.strftime("%A")
+            }
+
+        except:
+            pass
+
+    return {
+        "date_ist": date_text,
+        "time_ist": time_text,
+        "day_ist": ""
+    }
+
+
+def get_html(url):
+    r = requests.get(url, headers=HEADERS, timeout=20)
+    r.raise_for_status()
+    return r.text
+
+
+# =====================================================
+# STEP 1: GET MATCH LINKS
+# =====================================================
+
+print("Opening Cricbuzz Schedule Page...")
+
+html = get_html(SCHEDULE_URL)
+soup = BeautifulSoup(html, "html.parser")
 
 match_links = []
 
-for a in links:
-    try:
-        text = a.get_text(strip=True)
-        href = a.get("href")
+for a in soup.find_all("a", href=True):
 
-        if href and text:
-            if (
-                "/live-cricket-scores/" in href
-                or "/live-cricket-scorecard/" in href
-                or "/cricket-match-facts/" in href
-            ):
-                full_url = href if href.startswith("http") else BASE_URL + href
-                match_links.append((text, full_url))
+    href = a["href"]
+    text = clean_text(a.get_text())
 
-    except:
-        pass
+    if not text:
+        continue
 
-# remove duplicates
-match_links = list(dict.fromkeys(match_links))
+    if (
+        "/live-cricket-scores/" in href
+        or "/live-cricket-scorecard/" in href
+        or "/cricket-match-facts/" in href
+    ):
+        full_url = href if href.startswith("http") else BASE_URL + href
+        match_links.append((text, full_url))
 
-print("Found", len(match_links), "matches")
+match_links = unique_list(match_links)
+
+print("Matches Found:", len(match_links))
 
 # =====================================================
-# SCRAPE EACH MATCH PAGE
+# STEP 2: SCRAPE MATCHES
 # =====================================================
+
 results = []
 
-for match_name, link in match_links:
+for idx, (title, link) in enumerate(match_links, start=1):
 
     try:
-        info_link = link.replace(
-            "/live-cricket-scores/",
-            "/cricket-match-facts/"
-        ).replace(
-            "/live-cricket-scorecard/",
-            "/cricket-match-facts/"
+        facts_url = (
+            link.replace("/live-cricket-scores/", "/cricket-match-facts/")
+                .replace("/live-cricket-scorecard/", "/cricket-match-facts/")
         )
 
-        print("Opening:", info_link)
+        print(f"[{idx}] Opening:", facts_url)
 
-        r = requests.get(info_link, headers=HEADERS, timeout=20)
-        r.raise_for_status()
+        page_html = get_html(facts_url)
+        page = BeautifulSoup(page_html, "html.parser")
 
-        page = BeautifulSoup(r.text, "html.parser")
         body_text = page.get_text("\n")
-
-        lines = [x.strip() for x in body_text.split("\n") if x.strip()]
+        lines = [clean_text(x) for x in body_text.split("\n") if clean_text(x)]
 
         row = {
-            "match_link_text": match_name,
+            "match_link_text": title,
             "match": "",
             "series": "",
-            "date": "",
-            "time": "",
+            "date_raw": "",
+            "time_raw": "",
+            "date_ist": "",
+            "time_ist": "",
+            "day_ist": "",
             "toss": "Toss not announced",
             "venue": "",
             "umpires": "",
@@ -89,16 +152,18 @@ for match_name, link in match_links:
             "stadium": "",
             "city": "",
             "capacity": "",
-            "ends": ""
+            "ends": "",
+            "source_url": facts_url
         }
 
         # -------------------------------------------------
-        # Extract fields
+        # KEY VALUE EXTRACTION
         # -------------------------------------------------
+
         for i in range(len(lines) - 1):
 
-            key = lines[i].strip().lower()
-            val = lines[i + 1].strip()
+            key = lines[i].lower()
+            val = lines[i + 1]
 
             if key == "match":
                 row["match"] = val
@@ -107,14 +172,13 @@ for match_name, link in match_links:
                 row["series"] = val
 
             elif key == "date":
-                row["date"] = val
+                row["date_raw"] = val
 
             elif key == "time":
-                row["time"] = val
+                row["time_raw"] = val
 
-            elif key == "toss":
-                if val:
-                    row["toss"] = val
+            elif key == "toss" and val:
+                row["toss"] = val
 
             elif key == "venue":
                 row["venue"] = val
@@ -137,19 +201,46 @@ for match_name, link in match_links:
             elif key == "ends":
                 row["ends"] = val
 
+        # -------------------------------------------------
+        # CONVERT TO IST
+        # -------------------------------------------------
+
+        ist_data = convert_to_ist(row["date_raw"], row["time_raw"])
+
+        row["date_ist"] = ist_data["date_ist"]
+        row["time_ist"] = ist_data["time_ist"]
+        row["day_ist"] = ist_data["day_ist"]
+
         results.append(row)
 
-        print(match_name, "=> Saved")
+        print("Saved:", row["match"] or title)
 
         time.sleep(1)
 
     except Exception as e:
-        print("Skipped:", match_name, str(e))
+        print("Skipped:", title, str(e))
 
 # =====================================================
-# SAVE TO JSON
+# STEP 3: SORT BY IST DATE/TIME
 # =====================================================
+
+def sort_key(item):
+    try:
+        return datetime.strptime(
+            item["date_ist"] + " " + item["time_ist"],
+            "%d-%m-%Y %I:%M %p"
+        )
+    except:
+        return datetime.max
+
+
+results.sort(key=sort_key)
+
+# =====================================================
+# STEP 4: SAVE JSON
+# =====================================================
+
 with open("matches.json", "w", encoding="utf-8") as f:
     json.dump(results, f, indent=4, ensure_ascii=False)
 
-print("\nSaved all match details to matches.json")
+print("\nSaved matches.json successfully")
