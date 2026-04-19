@@ -1,17 +1,28 @@
 from selenium import webdriver
-from selenium.webdriver.edge.options import Options
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
 import pandas as pd
 import json
 import time
 
 # =====================================================
-# EDGE SETUP
+# CHROME SETUP FOR RENDER / CLOUD HOSTING
 # =====================================================
 options = Options()
-options.add_argument("--start-maximized")
 
-driver = webdriver.Edge(options=options)
+options.add_argument("--headless=new")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
+options.add_argument("--window-size=1920,1080")
+options.add_argument("--disable-blink-features=AutomationControlled")
+
+driver = webdriver.Chrome(
+    service=Service(ChromeDriverManager().install()),
+    options=options
+)
 
 # =====================================================
 # OPEN CRICBUZZ SCHEDULE PAGE
@@ -61,11 +72,16 @@ for match_name, link in match_links:
         driver.switch_to.window(driver.window_handles[-1])
 
         # convert to info page
-        info_link = link.replace("/live-cricket-scores/", "/cricket-match-facts/")
-        info_link = info_link.replace("/live-cricket-scorecard/", "/cricket-match-facts/")
+        info_link = link.replace(
+            "/live-cricket-scores/",
+            "/cricket-match-facts/"
+        ).replace(
+            "/live-cricket-scorecard/",
+            "/cricket-match-facts/"
+        )
 
         driver.get(info_link)
-        time.sleep(5)
+        time.sleep(4)
 
         body = driver.find_element(By.TAG_NAME, "body").text
         lines = [x.strip() for x in body.split("\n") if x.strip()]
@@ -89,10 +105,10 @@ for match_name, link in match_links:
         # -------------------------------------------------
         # Extract fields
         # -------------------------------------------------
-        for i in range(len(lines)-1):
+        for i in range(len(lines) - 1):
 
             key = lines[i].strip().lower()
-            val = lines[i+1].strip()
+            val = lines[i + 1].strip()
 
             if key == "match":
                 row["match"] = val
@@ -132,14 +148,13 @@ for match_name, link in match_links:
                 row["ends"] = val
 
         results.append(row)
-
         print(match_name, "=> Saved")
 
         driver.close()
         driver.switch_to.window(main_tab)
 
-    except:
-        pass
+    except Exception as e:
+        print("Skipped:", match_name, str(e))
 
 # =====================================================
 # CLOSE BROWSER
