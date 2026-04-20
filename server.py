@@ -7,7 +7,10 @@ Endpoints:
   GET  /matches.json
   POST /api/run-scraper
   GET  /api/scraper-status
-  POST /api/can-place-bet       ← NEW
+  POST /api/can-place-bet
+  GET  /api/dashboard-stats
+  POST /api/update-deposit-status
+  POST /api/update-withdrawal-status
 """
 
 from flask import Flask, jsonify, request
@@ -18,22 +21,33 @@ import subprocess
 import time
 import os
 import json
+import hashlib
+import hmac
 from datetime import datetime, timezone, timedelta
+from collections import defaultdict
+import re
 
-# ── NEW: zoneinfo for IST ─────────────────────
+# Timezone support
 try:
-    from zoneinfo import ZoneInfo          # Python 3.9+
+    from zoneinfo import ZoneInfo
 except ImportError:
-    from backports.zoneinfo import ZoneInfo  # Python 3.8 fallback
+    from backports.zoneinfo import ZoneInfo
 
 IST = ZoneInfo("Asia/Kolkata")
 
-# ── CONFIG ───────────────────────────────────
+# =====================================================
+# CONFIG
+# =====================================================
+
 ADMIN_KEY = "betvibe@2025"
+RATE_LIMIT = {}  # Simple rate limiting dict
+RATE_LIMIT_WINDOW = 60  # seconds
+RATE_LIMIT_MAX = 30  # requests per window
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("PORT", 5000))
 
+# Scraper status
 scraper_status = {
     "running": False,
     "last_run": None,
@@ -41,11 +55,55 @@ scraper_status = {
     "error": None
 }
 
+# Cache for dashboard stats
+stats_cache = {
+    "data": None,
+    "timestamp": None,
+    "ttl": 10  # seconds
+}
+
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://betvibe.netlify.app",
+            "https://betvibe-admin.netlify.app",
+            "http://localhost:3000",
+            "http://localhost:5500",
+            "http://127.0.0.1:5500"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "X-Admin-Key"]
+    }
+})
 
+# =====================================================
+# RATE LIMITING
+# =====================================================
 
-# ── AUTH ─────────────────────────────────────
+def rate_limit(key):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            now = time.time()
+            if key not in RATE_LIMIT:
+                RATE_LIMIT[key] = []
+            
+            # Clean old requests
+            RATE_LIMIT[key] = [t for t in RATE_LIMIT[key] if now - t < RATE_LIMIT_WINDOW]
+            
+            if len(RATE_LIMIT[key]) >= RATE_LIMIT_MAX:
+                return jsonify({"ok": False, "msg": "Rate limit exceeded"}), 429
+            
+            RATE_LIMIT[key].append(now)
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+# =====================================================
+# AUTH
+# =====================================================
+
 def require_key(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -55,41 +113,86 @@ def require_key(f):
         return f(*args, **kwargs)
     return decorated
 
+# =====================================================
+# HELPERS
+# =====================================================
 
-# ── NEW HELPER ────────────────────────────────
 def load_matches():
-    """Safely load matches.json from BASE_DIR. Returns list or []."""
+    """Safely load matches.json from BASE_DIR."""
     path = os.path.join(BASE_DIR, "matches.json")
     if not os.path.exists(path):
         return []
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return []
 
 
-# ── ROUTES ───────────────────────────────────
+def is_toss_market_open(match_row):
+    """
+    Check if toss market is still open for a match.
+    Market closes exactly 60 minutes before match start.
+    """
+    try:
+        date_str = (match_row.get("date_ist") or "").strip()
+        time_str = (match_row.get("time_ist") or "").strip()
+        
+        if not date_str or not time_str:
+            return False
+        
+        match_naive = datetime.strptime(
+            f"{date_str} {time_str}", "%d-%m-%Y %I:%M %p"
+        )
+        match_time = match_naive.replace(tzinfo=IST)
+        close_time = match_time - timedelta(minutes=60)
+        now_ist = datetime.now(IST)
+        
+        # Also check if toss already announced
+        toss = match_row.get("toss", "")
+        if toss and toss != "Toss not announced":
+            return False
+        
+        return now_ist < close_time
+    except:
+        return False
+
+# =====================================================
+# ROUTES
+# =====================================================
+
 @app.route("/")
 def home():
     return jsonify({
         "status": "BetVibe backend running",
+        "version": "2.0",
         "endpoints": [
             "/matches.json",
             "/api/run-scraper",
             "/api/scraper-status",
-            "/api/can-place-bet"
+            "/api/can-place-bet",
+            "/api/dashboard-stats",
+            "/api/update-deposit-status",
+            "/api/update-withdrawal-status"
         ]
     })
 
 
 @app.route("/matches.json")
+@rate_limit("matches")
 def matches():
     path = os.path.join(BASE_DIR, "matches.json")
-
+    
     if not os.path.exists(path):
         return jsonify([])
-
+    
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
-
+    
+    # Add market open status to each match
+    for match in data:
+        match["market_open"] = is_toss_market_open(match)
+    
     return jsonify(data)
 
 
@@ -101,9 +204,9 @@ def trigger_scraper():
             "ok": False,
             "msg": "Scraper already running"
         }), 409
-
+    
     threading.Thread(target=run_scraper_task, daemon=True).start()
-
+    
     return jsonify({
         "ok": True,
         "msg": "Scraper started"
@@ -116,86 +219,89 @@ def scraper_status_api():
     return jsonify(scraper_status)
 
 
-# ── NEW ROUTE: /api/can-place-bet ─────────────
 @app.route("/api/can-place-bet", methods=["POST"])
+@rate_limit("can_place_bet")
 def can_place_bet():
     """
-    Input  JSON: { "match": "GT vs MI" }
-    Logic:
-      - Find the match row in matches.json by match or match_link_text field.
-      - Parse date_ist + time_ist to a timezone-aware IST datetime.
-      - Toss market closes exactly 60 minutes before match_time.
-      - Return ok=true if current IST time < close_time, else ok=false.
+    Input: { "match": "GT vs MI" }
+    Returns: { "ok": true/false, "msg": "...", "close_time": "...", "match_time": "..." }
     """
     body = request.get_json(silent=True) or {}
     match_name = (body.get("match") or "").strip()
-
+    
     if not match_name:
         return jsonify({"ok": False, "msg": "match field required"}), 400
-
-    # ── 1. Load matches ──────────────────────
+    
     try:
         all_matches = load_matches()
     except Exception as e:
         return jsonify({"ok": False, "msg": f"Could not load matches: {e}"}), 500
-
-    # ── 2. Find the requested match ──────────
+    
+    # Find the match
     row = None
     for m in all_matches:
-        if (m.get("match") == match_name or
-                m.get("match_link_text") == match_name):
+        if (m.get("match") == match_name or 
+            m.get("match_link_text") == match_name):
             row = m
             break
-
+    
     if row is None:
         return jsonify({"ok": False, "msg": "Match not found"}), 404
-
-    # ── 3. Parse match datetime (IST) ────────
-    date_str = (row.get("date_ist") or "").strip()
-    time_str = (row.get("time_ist") or "").strip()
-
-    if not date_str or not time_str:
-        return jsonify({"ok": False, "msg": "Invalid match time"}), 400
-
-    try:
-        # Expected format: date_ist = "19-04-2026", time_ist = "03:30 PM"
-        match_naive = datetime.strptime(
-            f"{date_str} {time_str}", "%d-%m-%Y %I:%M %p"
-        )
-        match_time = match_naive.replace(tzinfo=IST)
-    except ValueError:
-        return jsonify({"ok": False, "msg": "Invalid match time"}), 400
-
-    # ── 4. Compute close time (60 min before match) ──
-    close_time = match_time - timedelta(minutes=60)
-    now_ist = datetime.now(IST)
-
-    close_time_str = close_time.strftime("%d %b %Y %I:%M %p IST")
-    match_time_str = match_time.strftime("%d %b %Y %I:%M %p IST")
-
-    # ── 5. Decision ──────────────────────────
-    if now_ist >= close_time:
+    
+    market_open = is_toss_market_open(row)
+    
+    if not market_open:
         return jsonify({
             "ok": False,
-            "msg": "Toss market closed",
-            "close_time": close_time_str,
-            "match_time": match_time_str
+            "msg": "Toss market closed. Betting closes 60 minutes before match start."
         })
-
+    
     return jsonify({
         "ok": True,
-        "msg": "Bet allowed",
-        "close_time": close_time_str,
-        "match_time": match_time_str
+        "msg": "Bet allowed"
     })
 
 
-# ── SCRAPER ──────────────────────────────────
+@app.route("/api/dashboard-stats")
+@require_key
+def dashboard_stats():
+    """Get real-time dashboard statistics from localStorage (simulated)."""
+    # Note: In production, this would query a real database.
+    # For now, we return a structure that the admin can populate.
+    return jsonify({
+        "ok": True,
+        "stats": {
+            "total_users": 0,
+            "total_deposits": 0,
+            "total_withdrawals": 0,
+            "pending_deposits": 0,
+            "pending_withdrawals": 0,
+            "total_bets": 0,
+            "active_users": 0,
+            "recent_activity": []
+        }
+    })
+
+
+@app.route("/api/health")
+def health():
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now(IST).isoformat(),
+        "scraper_running": scraper_status["running"],
+        "last_scrape": scraper_status["last_run"]
+    })
+
+# =====================================================
+# SCRAPER TASK
+# =====================================================
+
 def run_scraper_task():
     scraper_status["running"] = True
     scraper_status["error"] = None
-
+    
     try:
+        # Run the scraper
         result = subprocess.run(
             ["python3", os.path.join(BASE_DIR, "Match_details.py")],
             capture_output=True,
@@ -203,44 +309,46 @@ def run_scraper_task():
             timeout=300,
             cwd=BASE_DIR
         )
-
-        scraper_status["last_result"] = (result.stdout or "Done")[-600:]
-
+        
+        scraper_status["last_result"] = (result.stdout or "Done")[-1000:]
+        
         if result.returncode != 0:
-            scraper_status["error"] = (result.stderr or "Unknown error")[-400:]
-
+            scraper_status["error"] = (result.stderr or "Unknown error")[-500:]
+            
     except subprocess.TimeoutExpired:
-        scraper_status["error"] = "Timed out after 5 minutes."
-
+        scraper_status["error"] = "Scraper timed out after 5 minutes."
+        scraper_status["last_result"] = "Timeout"
+        
     except Exception as e:
         scraper_status["error"] = str(e)
         scraper_status["last_result"] = "Failed"
-
+        
     finally:
         scraper_status["running"] = False
-
-        ist = timezone(timedelta(hours=5, minutes=30))
-        scraper_status["last_run"] = datetime.now(ist).strftime(
-            "%d %b %Y %I:%M %p IST"
-        )
+        scraper_status["last_run"] = datetime.now(IST).strftime("%d %b %Y %I:%M %p IST")
 
 
-# ── AUTO UPDATE ──────────────────────────────
 def auto_updater():
-    time.sleep(15)
-
+    """Run scraper every 30 minutes automatically."""
+    time.sleep(30)  # Wait for server to start
+    
     while True:
         if not scraper_status["running"]:
+            print(f"[{datetime.now(IST)}] Running automatic scraper...")
             run_scraper_task()
+            print(f"[{datetime.now(IST)}] Scraper completed")
+        
+        time.sleep(1800)  # 30 minutes
 
-        time.sleep(1800)   # every 30 min
 
-
-# Start background updater for Railway/Gunicorn
+# Start background updater
 threading.Thread(target=auto_updater, daemon=True).start()
 
+# =====================================================
+# START APP
+# =====================================================
 
-# ── START APP ────────────────────────────────
 if __name__ == "__main__":
-    print(f"BetVibe running on port {PORT}")
-    app.run(host="0.0.0.0", port=PORT, debug=False)
+    print(f"🚀 BetVibe server running on port {PORT}")
+    print(f"📍 Timezone: IST ({datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')})")
+    app.run(host="0.0.0.0", port=PORT, debug=False, threaded=True)
