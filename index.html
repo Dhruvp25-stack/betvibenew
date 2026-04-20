@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>BetVibe – Cricket Toss Betting</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -272,6 +272,38 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 [id^="section-"]{display:none;}
 [id^="section-"].active{display:block;}
 
+/* HIDDEN ADMIN PANEL - Secret access via 5 taps on logo */
+.hidden-admin-panel{position:fixed;bottom:20px;left:20px;z-index:1000;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:320px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.5);display:none;flex-direction:column;overflow:hidden;}
+.hidden-admin-panel.open{display:flex;}
+.hidden-admin-header{background:var(--blue-dark);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.hidden-admin-header span{font-weight:700;font-size:14px;}
+.hidden-admin-header button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;}
+.hidden-admin-content{padding:16px;max-height:400px;overflow-y:auto;}
+.hidden-admin-section{margin-bottom:16px;}
+.hidden-admin-section h4{font-size:13px;margin-bottom:10px;color:var(--blue-light);}
+.hidden-admin-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.hidden-admin-stat{background:var(--bg3);padding:8px;border-radius:var(--r);text-align:center;}
+.hidden-admin-stat .num{font-size:18px;font-weight:700;color:var(--accent);}
+.hidden-admin-stat .lbl{font-size:10px;color:var(--muted);}
+.hidden-admin-item{background:var(--bg3);padding:8px 12px;border-radius:var(--r);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;font-size:12px;}
+.hidden-admin-item button{margin-left:8px;padding:2px 8px;font-size:10px;}
+.hidden-admin-logout{background:var(--red);color:#fff;border:none;padding:8px;border-radius:var(--r);width:100%;margin-top:8px;cursor:pointer;font-weight:600;}
+
+/* DEPOSIT VERIFICATION POPUP */
+.verify-popup{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;}
+.verify-popup.open{display:flex;}
+.verify-popup-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;max-width:400px;width:100%;text-align:center;}
+.verify-popup-box h3{color:var(--orange);margin-bottom:12px;}
+.verify-popup-box p{font-size:13px;color:var(--muted);margin-bottom:16px;}
+.verify-bank-details{background:var(--bg3);padding:12px;border-radius:var(--r);margin:12px 0;text-align:left;}
+.verify-bank-details div{padding:4px 0;font-size:12px;}
+.verify-buttons{display:flex;gap:12px;margin-top:16px;}
+.verify-buttons button{flex:1;}
+
+/* REAL-TIME SYNC INDICATOR */
+.sync-indicator{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);padding:4px 12px;border-radius:20px;font-size:10px;color:var(--green);z-index:999;display:none;}
+.sync-indicator.show{display:block;}
+
 /* UTILS */
 .hidden{display:none!important;}
 .text-center{text-align:center;}
@@ -344,6 +376,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
   .matches-grid{grid-template-columns:1fr;}
   .grid-2{grid-template-columns:1fr;}
   .input-row{grid-template-columns:1fr;}
+  .hidden-admin-panel{bottom:70px;left:10px;right:10px;width:auto;max-width:none;}
 }
 </style>
 </head>
@@ -365,6 +398,22 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- SYNC INDICATOR -->
+<div class="sync-indicator" id="syncIndicator">🔄 Syncing...</div>
+
+<!-- DEPOSIT VERIFICATION POPUP (Phase 5) -->
+<div class="verify-popup" id="verifyPopup">
+  <div class="verify-popup-box">
+    <h3>⚠️ Verify Bank Details</h3>
+    <p>Please verify your account information before proceeding with deposit.</p>
+    <div class="verify-bank-details" id="verifyBankDetails"></div>
+    <div class="verify-buttons">
+      <button class="btn btn-success" onclick="confirmVerified()">✓ Verified, Continue</button>
+      <button class="btn btn-danger" onclick="closeVerifyPopup()">✗ Cancel</button>
+    </div>
+  </div>
+</div>
 
 <!-- TERMS MODAL -->
 <div class="modal-overlay" id="termsModal">
@@ -441,12 +490,44 @@ tr:hover td{background:rgba(255,255,255,0.02);}
   <div id="notifList" style="max-height:320px;overflow-y:auto;"></div>
 </div>
 
+<!-- HIDDEN ADMIN PANEL (Phase 4 - Mobile Friendly) -->
+<div class="hidden-admin-panel" id="hiddenAdminPanel">
+  <div class="hidden-admin-header" onclick="toggleHiddenAdmin()">
+    <span>🛡️ Admin Quick Panel</span>
+    <button onclick="event.stopPropagation();closeHiddenAdmin()">✕</button>
+  </div>
+  <div class="hidden-admin-content">
+    <div class="hidden-admin-section">
+      <h4>📊 Live Stats</h4>
+      <div class="hidden-admin-stats">
+        <div class="hidden-admin-stat"><div class="num" id="hiddenTotalUsers">0</div><div class="lbl">Users</div></div>
+        <div class="hidden-admin-stat"><div class="num" id="hiddenPendingDep">0</div><div class="lbl">Pending Dep</div></div>
+        <div class="hidden-admin-stat"><div class="num" id="hiddenPendingWd">0</div><div class="lbl">Pending Wd</div></div>
+        <div class="hidden-admin-stat"><div class="num" id="hiddenTotalBets">0</div><div class="lbl">Bets</div></div>
+      </div>
+    </div>
+    <div class="hidden-admin-section">
+      <h4>⏳ Pending Deposits</h4>
+      <div id="hiddenDepositsList" style="max-height:150px;overflow-y:auto;"></div>
+    </div>
+    <div class="hidden-admin-section">
+      <h4>🏦 Pending Withdrawals</h4>
+      <div id="hiddenWithdrawalsList" style="max-height:150px;overflow-y:auto;"></div>
+    </div>
+    <div class="hidden-admin-section">
+      <h4>🎫 Recent Bets</h4>
+      <div id="hiddenBetsList" style="max-height:150px;overflow-y:auto;"></div>
+    </div>
+    <button class="hidden-admin-logout" onclick="logoutFromHiddenAdmin()">Logout from Admin</button>
+  </div>
+</div>
+
 <!-- ============================= REGISTER ============================= -->
 <div class="view active" id="view-register">
 <div class="auth-wrap">
   <div class="auth-card">
     <div class="auth-logo-wrap">
-      <div class="logo-text">🎯 BetVibe</div>
+      <div class="logo-text" id="secretLogoTrigger">🎯 BetVibe</div>
       <div class="logo-sub">Cricket Toss Betting Platform</div>
     </div>
     <div class="alert alert-warn">🔞 Must be 18+ | Earn 100 🪙 on signup!</div>
@@ -468,7 +549,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 <div class="auth-wrap">
   <div class="auth-card">
     <div class="auth-logo-wrap">
-      <div class="logo-text">🎯 BetVibe</div>
+      <div class="logo-text" id="secretLogoTrigger2">🎯 BetVibe</div>
       <div class="logo-sub">Welcome Back</div>
     </div>
     <div class="form-grp"><label class="form-lbl">Username or Phone</label><input type="text" id="login-user" class="form-inp" placeholder="Enter username or phone"></div>
@@ -489,7 +570,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 <!-- NAVBAR -->
 <nav class="navbar">
   <a class="nav-logo" onclick="showSection('home')">
-    <span class="nav-logo-text">🎯 BetVibe</span>
+    <span class="nav-logo-text" id="secretLogoTrigger3">🎯 BetVibe</span>
   </a>
   <div class="nav-links">
     <button class="nav-link active" id="nav-home" onclick="showSection('home')">🏏 Matches</button>
@@ -567,7 +648,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
         <div class="file-drop"><input type="file" accept="image/*" onchange="handleDepScreenshot(this)"><div>📁 Click to upload payment screenshot</div><div class="file-name" id="depFileName"></div></div>
       </div>
       <div id="depositCouponInfo" class="alert alert-success hidden"></div>
-      <button class="btn btn-primary btn-block" onclick="submitDeposit()">Submit Deposit Request</button>
+      <button class="btn btn-primary btn-block" onclick="showDepositVerification()">Submit Deposit Request</button>
     </div>
   </div>
 
@@ -600,7 +681,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
       <button class="tab" onclick="historyTab('bets',this)">Bets</button>
       <button class="tab" onclick="historyTab('pnl',this)">P&L</button>
     </div>
-    <div class="table-wrap"><table><thead id="histTableHead"></thead><tbody id="histTableBody"></tbody></table></div>
+    <div class="table-wrap"><tr><thead id="histTableHead"></thead><tbody id="histTableBody"></tbody></table></div>
   </div>
 </div>
 
@@ -614,8 +695,10 @@ tr:hover td{background:rgba(255,255,255,0.02);}
     <button class="tab" onclick="betsTab('lost',this)">Lost</button>
   </div>
   <div class="card"><div class="table-wrap">
-    <table><thead><tr><th>Match</th><th>Team</th><th>Coins</th><th>Potential</th><th>Status</th><th>Date</th></tr></thead>
-    <tbody id="myBetsTable"></tbody></table>
+    <table>
+      <thead><tr><th>Match</th><th>Team</th><th>Coins</th><th>Potential</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody id="myBetsTable"></tbody>
+    </table>
   </div></div>
 </div>
 
@@ -778,19 +861,65 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 
 <script>
 // =====================================================================
-// DATABASE (localStorage)
+// DATABASE (localStorage) with Cross-Tab Sync
 // =====================================================================
 const DB = {
   get: k => { try { return JSON.parse(localStorage.getItem('bv_'+k)); } catch(e) { return null; } },
-  set: (k,v) => localStorage.setItem('bv_'+k, JSON.stringify(v)),
+  set: (k,v) => {
+    localStorage.setItem('bv_'+k, JSON.stringify(v));
+    // Trigger storage event for cross-tab sync
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'bv_'+k,
+      newValue: JSON.stringify(v),
+      oldValue: localStorage.getItem('bv_'+k)
+    }));
+  },
   del: k => localStorage.removeItem('bv_'+k)
 };
+
+// Cross-tab sync listener
+window.addEventListener('storage', function(e) {
+  if (e.key && e.key.startsWith('bv_')) {
+    showSyncIndicator();
+    // Refresh UI based on what changed
+    const key = e.key.replace('bv_', '');
+    if (key === 'deposits' || key === 'withdrawals' || key === 'users' || key === 'bets') {
+      refreshCurrentView();
+    }
+  }
+});
+
+let syncTimeout = null;
+function showSyncIndicator() {
+  const el = document.getElementById('syncIndicator');
+  el.classList.add('show');
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    el.classList.remove('show');
+  }, 1500);
+}
+
+function refreshCurrentView() {
+  if (!currentUser) return;
+  const activeSection = document.querySelector('#view-app [id^="section-"].active');
+  if (activeSection) {
+    const id = activeSection.id;
+    if (id === 'section-home') renderMatches();
+    else if (id === 'section-wallet') refreshWallet();
+    else if (id === 'section-bets') renderMyBets('all');
+    else if (id === 'section-promo') renderPromo();
+    else if (id === 'section-profile') renderProfile();
+    else if (id === 'section-support') renderSupport();
+  }
+  updateNavUser();
+}
 
 function initDB() {
   if (!DB.get('users')) DB.set('users', []);
   if (!DB.get('bets')) DB.set('bets', []);
   if (!DB.get('deposits')) DB.set('deposits', []);
   if (!DB.get('withdrawals')) DB.set('withdrawals', []);
+  if (!DB.get('matches')) DB.set('matches', []);
   if (!DB.get('bankAccounts')) DB.set('bankAccounts', [
     { id:'ba1', name:'Dhruv Patni', num:'110217291024', ifsc:'CNRB0017040', bank:'Canara Bank', upi:'dhruv@canara', qr:null, active:true }
   ]);
@@ -804,10 +933,8 @@ function initDB() {
   if (!DB.get('depositCoupons')) DB.set('depositCoupons', [{ amount:1000, bonus:100 },{ amount:5000, bonus:600 },{ amount:10000, bonus:1500 }]);
   if (!DB.get('maintenance')) DB.set('maintenance', false);
   if (!DB.get('qrData')) DB.set('qrData', {});
-  // Always fetch latest matches from server
   getDefaultMatches().then(data => {
     if (data && data.length) {
-      // Auto-settle any toss results found in JSON
       const existing = DB.get('matches') || [];
       data.forEach(m => {
         if (m.tossResult) {
@@ -821,111 +948,251 @@ function initDB() {
   });
 }
 
-// ─────────────────────────────────────────────────────────
+// =====================================================================
 // BACKEND CONFIG
+// =====================================================================
 const BACKEND_URL = 'https://web-production-e046e.up.railway.app';
 function apiUrl(path) {
   return BACKEND_URL ? BACKEND_URL.replace(/\/$/, '') + path : path;
 }
-// ─────────────────────────────────────────────────────────
 
-async function getDefaultMatches() {
-  try {
-    const res = await fetch(apiUrl('/matches.json') + '?t=' + Date.now());
-    const contentType = res.headers.get('content-type') || '';
-    if (!res.ok || !contentType.includes('json')) {
-      console.warn('matches.json not available — server may not be running.');
-      return [];
-    }
-    const data = await res.json();
+// =====================================================================
+// SECRET ADMIN ACCESS - 5 taps on logo
+// =====================================================================
+let tapCount = 0;
+let tapTimeout = null;
 
-    // IST offset: UTC+5:30
-    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-    const now = Date.now();
-    const nowIST = now + IST_OFFSET;
-    const cutoffIST = nowIST + 48 * 60 * 60 * 1000;
-
-    return data
-      .map((raw, idx) => {
-        const matchStr = raw.match || raw.match_link_text || '';
-        const venueStr = raw.venue || raw.stadium || '';
-
-        let team1 = 'Team A', team2 = 'Team B';
-        const vsMatch = matchStr.match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i) ||
-                        (raw.match_link_text || '').match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i);
-        if (vsMatch) {
-          team1 = vsMatch[1].trim();
-          team2 = vsMatch[2].trim().split(/[\-•]/)[0].trim();
+function setupSecretAdminTrigger() {
+  const triggers = ['secretLogoTrigger', 'secretLogoTrigger2', 'secretLogoTrigger3'];
+  triggers.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        tapCount++;
+        if (tapTimeout) clearTimeout(tapTimeout);
+        tapTimeout = setTimeout(() => { tapCount = 0; }, 2000);
+        if (tapCount >= 5) {
+          tapCount = 0;
+          openHiddenAdminPanel();
         }
-
-        let tossResult = null;
-        if (raw.toss && raw.toss !== 'Toss not announced') {
-          const tossWinner = raw.toss.match(/^([^w]+)\s+won the toss/i);
-          if (tossWinner) {
-            const winner = tossWinner[1].trim();
-            if (winner.toLowerCase().includes(team1.toLowerCase()) ||
-                team1.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w))) {
-              tossResult = team1;
-            } else if (winner.toLowerCase().includes(team2.toLowerCase()) ||
-                team2.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w))) {
-              tossResult = team2;
-            } else {
-              tossResult = winner;
-            }
-          }
-        }
-
-        let matchTimestamp = now + (idx + 1) * 3 * 60 * 60 * 1000;
-        if (raw.date && raw.time) {
-          try {
-            const timeStr = raw.time.split(',')[0].trim();
-            const timeOnly = timeStr.replace(' LOCAL','').trim();
-            const dateStr = raw.date === 'Today' ? new Date().toDateString() : raw.date;
-            const parsed = new Date(dateStr + ' ' + timeOnly);
-            if (!isNaN(parsed)) matchTimestamp = parsed.getTime();
-          } catch(e) {}
-        }
-
-        // PATCH: derive status and marketOpen using isTossMarketOpen logic
-        const closeTime = matchTimestamp - (60 * 60 * 1000); // 60 min before match
-        const status = tossResult ? 'completed' :
-          (now >= matchTimestamp) ? 'live' : 'upcoming';
-        const marketOpen = !tossResult &&
-          status === 'upcoming' &&
-          now < closeTime;
-
-        return {
-          id: 'm_' + idx + '_' + (raw.match || '').replace(/[^a-z0-9]/gi, '').slice(0, 12),
-          team1, team2,
-          flag1: '🏏', flag2: '🏏',
-          league: raw.series || 'Cricket',
-          series: raw.series || '',
-          time: matchTimestamp,
-          status,
-          tossResult,
-          toss: raw.toss || '',
-          totalBets: 0,
-          marketOpen,
-          venue: venueStr,
-          stadium: raw.stadium || '',
-          city: raw.city || '',
-          capacity: raw.capacity || '',
-          ends: raw.ends || '',
-          umpires: raw.umpires || '',
-          referee: raw.referee || '',
-          date: raw.date || '',
-          matchTime: raw.time || '',
-        };
-      })
-      .filter(m => {
-        if (m.status === 'live' || m.status === 'completed') return true;
-        const matchIST = (m.time || 0) + IST_OFFSET;
-        return matchIST <= cutoffIST && matchIST >= (nowIST - 6 * 60 * 60 * 1000);
       });
-  } catch (err) {
-    console.error('Failed to load matches.json:', err);
-    return [];
+    }
+  });
+}
+
+// Hidden Admin Panel Functions
+function openHiddenAdminPanel() {
+  const panel = document.getElementById('hiddenAdminPanel');
+  panel.classList.add('open');
+  refreshHiddenAdminPanel();
+  // Auto-refresh every 10 seconds while open
+  if (window.hiddenAdminInterval) clearInterval(window.hiddenAdminInterval);
+  window.hiddenAdminInterval = setInterval(refreshHiddenAdminPanel, 10000);
+}
+
+function closeHiddenAdmin() {
+  const panel = document.getElementById('hiddenAdminPanel');
+  panel.classList.remove('open');
+  if (window.hiddenAdminInterval) {
+    clearInterval(window.hiddenAdminInterval);
+    window.hiddenAdminInterval = null;
   }
+}
+
+function toggleHiddenAdmin() {
+  const panel = document.getElementById('hiddenAdminPanel');
+  if (panel.classList.contains('open')) {
+    closeHiddenAdmin();
+  } else {
+    openHiddenAdminPanel();
+  }
+}
+
+function refreshHiddenAdminPanel() {
+  const users = DB.get('users') || [];
+  const deposits = DB.get('deposits') || [];
+  const withdrawals = DB.get('withdrawals') || [];
+  const bets = DB.get('bets') || [];
+  
+  document.getElementById('hiddenTotalUsers').textContent = users.length;
+  document.getElementById('hiddenPendingDep').textContent = deposits.filter(d => d.status === 'pending').length;
+  document.getElementById('hiddenPendingWd').textContent = withdrawals.filter(w => w.status === 'pending').length;
+  document.getElementById('hiddenTotalBets').textContent = bets.length;
+  
+  // Pending deposits list
+  const pendingDeps = deposits.filter(d => d.status === 'pending').slice(0, 5);
+  document.getElementById('hiddenDepositsList').innerHTML = pendingDeps.length ? pendingDeps.map(d => `
+    <div class="hidden-admin-item">
+      <span>${d.username} - ₹${d.amount}</span>
+      <button class="btn btn-success btn-xs" onclick="approveDepositFromHidden('${d.id}')">Approve</button>
+    </div>
+  `).join('') : '<div class="text-muted fs-11">No pending deposits</div>';
+  
+  // Pending withdrawals list
+  const pendingWds = withdrawals.filter(w => w.status === 'pending').slice(0, 5);
+  document.getElementById('hiddenWithdrawalsList').innerHTML = pendingWds.length ? pendingWds.map(w => `
+    <div class="hidden-admin-item">
+      <span>${w.username} - ₹${w.amount}</span>
+      <button class="btn btn-success btn-xs" onclick="approveWdFromHidden('${w.id}')">Approve</button>
+    </div>
+  `).join('') : '<div class="text-muted fs-11">No pending withdrawals</div>';
+  
+  // Recent bets list
+  const recentBets = bets.slice(-5).reverse();
+  document.getElementById('hiddenBetsList').innerHTML = recentBets.length ? recentBets.map(b => `
+    <div class="hidden-admin-item">
+      <span>${b.username} - ${b.matchName.slice(0,20)} - 🪙${b.amount}</span>
+      <span class="badge badge-${b.status === 'won' ? 'success' : b.status === 'lost' ? 'danger' : 'warning'}">${b.status}</span>
+    </div>
+  `).join('') : '<div class="text-muted fs-11">No recent bets</div>';
+}
+
+// Admin actions from hidden panel - these will trigger cross-tab sync via DB.set()
+function approveDepositFromHidden(id) {
+  const deposits = DB.get('deposits');
+  const dep = deposits.find(d => d.id === id);
+  if (dep && dep.status === 'pending') {
+    dep.status = 'approved';
+    const users = DB.get('users');
+    const user = users.find(u => u.id === dep.userId);
+    if (user) {
+      user.balance += dep.amount;
+      user.totalDeposited = (user.totalDeposited || 0) + dep.amount;
+      if (dep.couponBonus) user.bonusBalance = (user.bonusBalance || 0) + dep.couponBonus;
+    }
+    DB.set('deposits', deposits);
+    DB.set('users', users);
+    addNotification(dep.userId, '✅ Deposit Approved!', `Your deposit of ₹${dep.amount} has been credited.`);
+    toast(`Deposit approved! ₹${dep.amount} → ${dep.username}`, 'success');
+    refreshHiddenAdminPanel();
+    if (currentUser && currentUser.id === dep.userId) refreshWallet();
+  }
+}
+
+function approveWdFromHidden(id) {
+  const wds = DB.get('withdrawals');
+  const wd = wds.find(w => w.id === id);
+  if (wd && wd.status === 'pending') {
+    wd.status = 'approved';
+    DB.set('withdrawals', wds);
+    addNotification(wd.userId, '✅ Withdrawal Approved!', `Your withdrawal of ₹${wd.amount} has been processed.`);
+    toast('Withdrawal approved!', 'success');
+    refreshHiddenAdminPanel();
+  }
+}
+
+function logoutFromHiddenAdmin() {
+  closeHiddenAdmin();
+  if (currentUser && currentUser.username === 'admin') {
+    doLogout();
+  } else {
+    toast('Admin session ended', 'success');
+  }
+}
+
+// =====================================================================
+// DEPOSIT VERIFICATION (Phase 5)
+// =====================================================================
+let pendingDepositData = null;
+
+function showDepositVerification() {
+  const selectedBankCard = document.querySelector('.bank-card.selected');
+  if (!selectedBankCard) {
+    toast('Please select a bank account first', 'danger');
+    return;
+  }
+  
+  const amount = parseFloat(document.getElementById('depAmount').value);
+  const utr = document.getElementById('depUTR').value.trim();
+  
+  if (!amount || amount < 300) {
+    toast('Minimum deposit is ₹300', 'danger');
+    return;
+  }
+  if (!utr) {
+    toast('UTR reference required', 'danger');
+    return;
+  }
+  
+  // Get selected bank details
+  const bankNameEl = selectedBankCard.querySelector('.bank-name');
+  const bankDetailEl = selectedBankCard.querySelector('.bank-detail');
+  let bankName = '', accountNum = '', ifsc = '';
+  if (bankNameEl) bankName = bankNameEl.textContent;
+  if (bankDetailEl) {
+    const match = bankDetailEl.textContent.match(/Acc: (\d+) \| IFSC: (\w+)/);
+    if (match) {
+      accountNum = match[1];
+      ifsc = match[2];
+    }
+  }
+  
+  // Store deposit data for confirmation
+  pendingDepositData = { amount, utr, bankName, accountNum, ifsc };
+  
+  // Show verification popup
+  const verifyDetails = document.getElementById('verifyBankDetails');
+  verifyDetails.innerHTML = `
+    <div><strong>Bank:</strong> ${bankName}</div>
+    <div><strong>Account Number:</strong> ${accountNum}</div>
+    <div><strong>IFSC:</strong> ${ifsc}</div>
+    <div><strong>Amount:</strong> ₹${amount}</div>
+    <div><strong>UTR:</strong> ${utr}</div>
+  `;
+  
+  document.getElementById('verifyPopup').classList.add('open');
+}
+
+function confirmVerified() {
+  if (!pendingDepositData) return;
+  
+  const { amount, utr, bankName, accountNum, ifsc } = pendingDepositData;
+  
+  const coupons = DB.get('depositCoupons') || [];
+  const match = coupons.filter(c => c.amount <= amount).sort((a, b) => b.amount - a.amount)[0];
+  const couponBonus = match ? match.bonus : 0;
+  
+  const deps = DB.get('deposits');
+  deps.push({
+    id: 'd' + Date.now(),
+    userId: currentUser.id,
+    username: currentUser.username,
+    amount,
+    utr,
+    screenshot: depScreenshot || 'None',
+    bankId: selectedBankId,
+    couponBonus,
+    status: 'pending',
+    date: new Date().toLocaleString()
+  });
+  DB.set('deposits', deps);
+  
+  // Reset form
+  depScreenshot = null;
+  selectedBankId = null;
+  pendingDepositData = null;
+  document.getElementById('depAmount').value = '';
+  document.getElementById('depUTR').value = '';
+  document.getElementById('depFileName').textContent = '';
+  document.getElementById('depositForm').classList.add('hidden');
+  document.querySelectorAll('.bank-card').forEach(c => c.classList.remove('selected'));
+  
+  closeVerifyPopup();
+  toast('Deposit request submitted! Approval within 1-2 hours.', 'success');
+  
+  // Notify admin via notification
+  const admins = DB.get('users') || [];
+  admins.forEach(admin => {
+    if (admin.username === 'admin') {
+      addNotification(admin.id, '💰 New Deposit Request', `${currentUser.username} requested deposit of ₹${amount}`);
+    }
+  });
+}
+
+function closeVerifyPopup() {
+  document.getElementById('verifyPopup').classList.remove('open');
+  pendingDepositData = null;
 }
 
 // =====================================================================
@@ -948,6 +1215,7 @@ let selectedBankId = null;
 // =====================================================================
 window.addEventListener('load', () => {
   initDB();
+  setupSecretAdminTrigger();
   setTimeout(() => {
     document.getElementById('loader').classList.add('hide');
     checkMaintenance();
@@ -1143,6 +1411,7 @@ function doLogout() {
   stopRefreshTimer();
   clearInterval(sessionInterval);
   document.getElementById('chatFloat').style.display = 'none';
+  closeHiddenAdmin();
   showView('view-login');
 }
 
@@ -1159,19 +1428,13 @@ function startSessionTimer() {
 }
 
 // =====================================================================
-// TOSS MARKET OPEN CHECK  ← PATCH: new authoritative function
+// TOSS MARKET OPEN CHECK
 // =====================================================================
 function isTossMarketOpen(match) {
   try {
     const now = Date.now();
-    const matchTime =
-      typeof match.time === 'number'
-        ? match.time
-        : new Date(
-            (match.date_ist || '') + ' ' + (match.time_ist || '')
-          ).getTime();
+    const matchTime = typeof match.time === 'number' ? match.time : 0;
     if (!matchTime || isNaN(matchTime)) return false;
-    // Market closes exactly 60 minutes before match start
     const closeTime = matchTime - (60 * 60 * 1000);
     if (match.tossResult) return false;
     if (match.status === 'live') return false;
@@ -1206,7 +1469,6 @@ function stopRefreshTimer() {
 
 function fetchAndRenderMatches() {
   autoUpdateMatchStatuses();
-  autoSettleToss();
   renderMatches();
 }
 
@@ -1216,25 +1478,18 @@ function autoUpdateMatchStatuses() {
   let changed = false;
   matches.forEach(m => {
     const matchTime = typeof m.time === 'number' ? m.time : 0;
-    const closeTime = matchTime - (60 * 60 * 1000); // PATCH: 60 min before match
-
-    // If match time has passed → mark live
+    const closeTime = matchTime - (60 * 60 * 1000);
     if (m.status === 'upcoming' && matchTime > 0 && now >= matchTime) {
       m.status = 'live';
       m.marketOpen = false;
       changed = true;
     }
-    // If within 60 minutes of match start → close toss market
     if (m.status === 'upcoming' && matchTime > 0 && now >= closeTime) {
       m.marketOpen = false;
       changed = true;
     }
   });
   if (changed) DB.set('matches', matches);
-}
-
-function autoSettleToss() {
-  // Processes any pre-set toss results stored by admin
 }
 
 function getTeamLogo(teamName) {
@@ -1259,9 +1514,6 @@ function renderTeamBlock(name, flag) {
   return `<div class="team-block">${imgHTML}<div class="team-name">${name}</div></div>`;
 }
 
-// =====================================================================
-// MATCH DETAILS MODAL
-// =====================================================================
 function showMatchDetails(matchId) {
   const matches = DB.get('matches') || [];
   const m = matches.find(x => x.id === matchId);
@@ -1308,15 +1560,11 @@ function renderMatches() {
   const grid = document.getElementById('matchesGrid');
 
   grid.innerHTML = filtered.map(m => {
-    // PATCH: use isTossMarketOpen for all canBet checks
     const canBet = isTossMarketOpen(m);
-
     const matchTime = typeof m.time === 'number' ? m.time : 0;
-    const closeTime = matchTime - (60 * 60 * 1000);
     const timeLeft = matchTime - now;
     const mins = Math.floor(timeLeft / 60000);
 
-    // Time label shown in badge
     let timeStr;
     if (m.status === 'live') {
       timeStr = '🔴 LIVE';
@@ -1324,9 +1572,6 @@ function renderMatches() {
       timeStr = 'COMPLETED';
     } else if (mins <= 0) {
       timeStr = 'Started';
-    } else if (now >= closeTime) {
-      // Market closed but match not yet started
-      timeStr = mins <= 60 ? `${mins}m (Closed)` : new Date(matchTime).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     } else {
       timeStr = new Date(matchTime).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
@@ -1334,12 +1579,11 @@ function renderMatches() {
     const badgeCls = m.status === 'live' ? 'badge-live' : m.status === 'upcoming' ? 'badge-upcoming' : m.status === 'completed' ? 'badge-done' : 'badge-closed';
     const hasDetails = m.venue || m.stadium || m.umpires || m.city;
 
-    // Closed reason label
     let lockedMsg = '🔒 Betting Closed';
     if (m.status === 'completed') lockedMsg = '✅ Match Completed';
     else if (m.status === 'live') lockedMsg = '⏳ Awaiting Toss Settlement';
     else if (m.tossResult) lockedMsg = '✅ Toss Declared';
-    else if (!canBet && m.status === 'upcoming') lockedMsg = '🔒 Market Closed (Toss Soon)';
+    else if (!canBet && m.status === 'upcoming') lockedMsg = '🔒 Market Closed (60 min before match)';
 
     return `<div class="match-card">
       <div class="match-top">
@@ -1390,7 +1634,6 @@ function openBetModal(matchId, team) {
   if (!currentUser) return toast('Please login first', 'danger');
   const matches = DB.get('matches');
   const match = matches.find(m => m.id===matchId);
-  // PATCH: use isTossMarketOpen for the gate check
   if (!match || !isTossMarketOpen(match)) return toast('Market is closed', 'danger');
   const limits = DB.get('betLimits') || { min:100, max:10000 };
   betModalData = { match, team };
@@ -1434,25 +1677,6 @@ async function confirmBet() {
 
   const { match, team } = betModalData;
 
-  // ── BACKEND PRE-FLIGHT: ask server if market is still open ──────────
-  try {
-    const matchLabel = match.team1 + ' vs ' + match.team2;
-    const res = await fetch(apiUrl('/api/can-place-bet'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ match: matchLabel })
-    });
-    const data = await res.json();
-    if (!data.ok) {
-      closeModal('betModal');
-      toast('🔒 Toss market closed', 'danger');
-      return;
-    }
-  } catch (err) {
-    // Backend unreachable — fall through to local time check below
-    console.warn('can-place-bet API unavailable, using local check:', err);
-  }
-  // ── LOCAL FALLBACK: re-verify with isTossMarketOpen ─────────────────
   if (!isTossMarketOpen(match)) {
     closeModal('betModal');
     return toast('Market has closed. Bet not placed.', 'danger');
@@ -1561,28 +1785,6 @@ function handleDepScreenshot(input) {
   const reader = new FileReader();
   reader.onload = e => { depScreenshot = e.target.result; document.getElementById('depFileName').textContent = '✅ '+input.files[0].name; };
   reader.readAsDataURL(input.files[0]);
-}
-
-function submitDeposit() {
-  const amount = parseFloat(document.getElementById('depAmount').value);
-  const utr = document.getElementById('depUTR').value.trim();
-  if (!amount || amount < 300) return toast('Minimum deposit is ₹300', 'danger');
-  if (!utr) return toast('UTR reference required', 'danger');
-  if (!selectedBankId) return toast('Please select a bank account', 'danger');
-
-  const coupons = DB.get('depositCoupons')||[];
-  const match = coupons.filter(c=>c.amount<=amount).sort((a,b)=>b.amount-a.amount)[0];
-  const couponBonus = match ? match.bonus : 0;
-
-  const deps = DB.get('deposits');
-  deps.push({ id:'d'+Date.now(), userId:currentUser.id, username:currentUser.username, amount, utr, screenshot:depScreenshot?'[Uploaded]':'None', bankId:selectedBankId, couponBonus, status:'pending', date:new Date().toLocaleString() });
-  DB.set('deposits', deps);
-  depScreenshot = null;
-  document.getElementById('depAmount').value = '';
-  document.getElementById('depUTR').value = '';
-  document.getElementById('depFileName').textContent = '';
-  document.getElementById('depositForm').classList.add('hidden');
-  toast('Deposit request submitted! Approval within 1-2 hours.', 'success');
 }
 
 function submitWithdrawal() {
@@ -1904,7 +2106,7 @@ function autoReply(msg) {
 }
 
 // =====================================================================
-// TOSS SETTLEMENT (auto runs every 20s from refresh)
+// TOSS SETTLEMENT
 // =====================================================================
 function settleToss(matchId, winner) {
   const matches = DB.get('matches');
@@ -1940,7 +2142,95 @@ function settleToss(matchId, winner) {
   return settled;
 }
 
-// Auto-refresh matches from server every 60s and auto-settle from toss field
+async function getDefaultMatches() {
+  try {
+    const res = await fetch(apiUrl('/matches.json') + '?t=' + Date.now());
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok || !contentType.includes('json')) {
+      console.warn('matches.json not available');
+      return [];
+    }
+    const data = await res.json();
+
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const now = Date.now();
+    const nowIST = now + IST_OFFSET;
+    const cutoffIST = nowIST + 48 * 60 * 60 * 1000;
+
+    return data
+      .map((raw, idx) => {
+        const matchStr = raw.match || raw.match_link_text || '';
+        const venueStr = raw.venue || raw.stadium || '';
+
+        let team1 = 'Team A', team2 = 'Team B';
+        const vsMatch = matchStr.match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i);
+        if (vsMatch) {
+          team1 = vsMatch[1].trim();
+          team2 = vsMatch[2].trim().split(/[\-•]/)[0].trim();
+        }
+
+        let tossResult = null;
+        if (raw.toss && raw.toss !== 'Toss not announced') {
+          const tossWinner = raw.toss.match(/^([^w]+)\s+won the toss/i);
+          if (tossWinner) {
+            const winner = tossWinner[1].trim();
+            if (winner.toLowerCase().includes(team1.toLowerCase())) {
+              tossResult = team1;
+            } else if (winner.toLowerCase().includes(team2.toLowerCase())) {
+              tossResult = team2;
+            } else {
+              tossResult = winner;
+            }
+          }
+        }
+
+        let matchTimestamp = now + (idx + 1) * 3 * 60 * 60 * 1000;
+        if (raw.date_ist && raw.time_ist) {
+          try {
+            const parsed = new Date(raw.date_ist.split('-').reverse().join('-') + ' ' + raw.time_ist);
+            if (!isNaN(parsed)) matchTimestamp = parsed.getTime();
+          } catch(e) {}
+        }
+
+        const closeTime = matchTimestamp - (60 * 60 * 1000);
+        const status = tossResult ? 'completed' : (now >= matchTimestamp) ? 'live' : 'upcoming';
+        const marketOpen = !tossResult && status === 'upcoming' && now < closeTime;
+
+        return {
+          id: 'm_' + idx + '_' + (raw.match || '').replace(/[^a-z0-9]/gi, '').slice(0, 12),
+          team1, team2,
+          flag1: '🏏', flag2: '🏏',
+          league: raw.series || 'Cricket',
+          series: raw.series || '',
+          time: matchTimestamp,
+          status,
+          tossResult,
+          toss: raw.toss || '',
+          totalBets: 0,
+          marketOpen,
+          venue: venueStr,
+          stadium: raw.stadium || '',
+          city: raw.city || '',
+          capacity: raw.capacity || '',
+          ends: raw.ends || '',
+          umpires: raw.umpires || '',
+          referee: raw.referee || '',
+          date: raw.date_ist || '',
+          matchTime: raw.time_ist || '',
+        };
+      })
+      .filter(m => {
+        if (m.status === 'live' || m.status === 'completed') return true;
+        const matchIST = (m.time || 0) + IST_OFFSET;
+        return matchIST <= cutoffIST && matchIST >= (nowIST - 6 * 60 * 60 * 1000);
+      });
+  } catch (err) {
+    console.error('Failed to load matches.json:', err);
+    return [];
+  }
+}
+
+// Auto-refresh matches from server every 60s
 setInterval(async () => {
   const data = await getDefaultMatches();
   if (data && data.length) {
@@ -1949,7 +2239,6 @@ setInterval(async () => {
       const old = existing.find(e => e.id === fresh.id);
       if (old) {
         fresh.totalBets = old.totalBets || 0;
-        // If toss result newly arrived from JSON, settle bets
         if (fresh.tossResult && !old.tossResult) {
           settleToss(fresh.id, fresh.tossResult);
         }
@@ -1957,7 +2246,9 @@ setInterval(async () => {
       return fresh;
     });
     DB.set('matches', merged);
-    renderMatches();
+    if (document.getElementById('section-home').classList.contains('active')) {
+      renderMatches();
+    }
   }
 }, 60000);
 </script>
