@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>BetVibe Admin Panel</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -15,6 +15,7 @@
   --text:#dce8f5;--muted:#6a80a0;--dim:#2d3d55;
   --r:8px;--r2:12px;
   --sidebar:240px;
+  --sidebar-mobile:0px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
@@ -22,6 +23,10 @@ h1,h2,h3,h4{font-family:'Exo 2',sans-serif;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg2);}
 ::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+
+/* MOBILE MENU TOGGLE */
+.mobile-menu-btn{display:none;position:fixed;bottom:20px;right:20px;width:50px;height:50px;background:var(--blue);border-radius:50%;align-items:center;justify-content:center;cursor:pointer;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.3);border:none;font-size:24px;color:#fff;}
+.mobile-menu-btn.active{background:var(--red);}
 
 /* VIEWS */
 .view{display:none;}
@@ -54,7 +59,7 @@ h1,h2,h3,h4{font-family:'Exo 2',sans-serif;}
 .admin-layout{display:flex;min-height:100vh;}
 
 /* SIDEBAR */
-.sidebar{width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar{width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform 0.3s ease;}
 .sidebar-brand{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 .sidebar-brand-icon{font-size:22px;}
 .sidebar-brand-text{font-family:'Exo 2',sans-serif;font-size:16px;font-weight:800;color:var(--blue-light);}
@@ -75,11 +80,14 @@ h1,h2,h3,h4{font-family:'Exo 2',sans-serif;}
 .topbar-right{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);}
 .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
-
 .content-wrap{padding:24px;flex:1;}
 .page-title{font-family:'Exo 2',sans-serif;font-size:22px;font-weight:800;margin-bottom:20px;color:var(--text);}
 
-/* PANELS (sections) */
+/* REAL-TIME INDICATOR */
+.realtime-badge{background:rgba(0,200,83,0.15);border:1px solid var(--green);border-radius:20px;padding:4px 10px;font-size:10px;color:var(--green);display:inline-flex;align-items:center;gap:6px;}
+.realtime-badge .pulse{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1s infinite;}
+
+/* PANELS */
 .panel{display:none;}
 .panel.active{display:block;}
 
@@ -194,11 +202,29 @@ input[type=checkbox].toggle:checked::after{left:18px;}
 .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;}
 .modal-head{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
 .modal-close{cursor:pointer;color:var(--muted);background:none;border:none;font-size:18px;}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.mobile-open{transform:translateX(0);}
+  .main-content{margin-left:0;}
+  .mobile-menu-btn{display:flex;}
+  .stats-grid,.grid-4{grid-template-columns:repeat(2,1fr);}
+  .grid-2,.grid-3{grid-template-columns:1fr;}
+  .input-row{grid-template-columns:1fr;}
+  .content-wrap{padding:16px;}
+  .topbar{padding:0 16px;}
+  .page-title{font-size:18px;}
+  .stat-val{font-size:20px;}
+}
 </style>
 </head>
 <body>
 
 <div class="toast" id="toast"></div>
+
+<!-- Mobile Menu Toggle Button -->
+<button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileSidebar()">☰</button>
 
 <!-- ============================= ADMIN LOGIN ============================= -->
 <div class="view active" id="view-login">
@@ -221,7 +247,7 @@ input[type=checkbox].toggle:checked::after{left:18px;}
 <div class="admin-layout">
 
 <!-- SIDEBAR -->
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
   <div class="sidebar-brand">
     <span class="sidebar-brand-icon">🛡️</span>
     <div>
@@ -254,7 +280,8 @@ input[type=checkbox].toggle:checked::after{left:18px;}
   <div class="topbar">
     <div class="topbar-title" id="topbarTitle">Dashboard</div>
     <div class="topbar-right">
-      <span><span class="live-dot"></span>Live System</span>
+      <span class="realtime-badge"><span class="pulse"></span>Live Updates</span>
+      <span><span class="live-dot"></span>System Online</span>
       <span id="topbarTime"></span>
     </div>
   </div>
@@ -269,14 +296,14 @@ input[type=checkbox].toggle:checked::after{left:18px;}
       <div class="stat-box orange" data-icon="📊"><div class="stat-lbl">Net Profit</div><div class="stat-val text-accent">₹<span id="adNetProfit">0</span></div><div class="stat-sub">Deposits - Withdrawals</div></div>
     </div>
     <div class="grid-4 mb-20">
-      <div class="stat-box" data-icon="⏳"><div class="stat-lbl">Pending Deposits</div><div class="stat-val text-warn" id="adPendingDep">0</div></div>
-      <div class="stat-box" data-icon="⏳"><div class="stat-lbl">Pending Withdrawals</div><div class="stat-val text-warn" id="adPendingWd">0</div></div>
-      <div class="stat-box" data-icon="🎫"><div class="stat-lbl">Total Bets</div><div class="stat-val" id="adTotalBets">0</div></div>
-      <div class="stat-box" data-icon="💬"><div class="stat-lbl">Open Tickets</div><div class="stat-val text-blue" id="adOpenTickets">0</div></div>
+      <div class="stat-box" data-icon="⏳"><div class="stat-lbl">Pending Deposits</div><div class="stat-val text-warn" id="adPendingDep">0</div><div class="stat-sub">Awaiting approval</div></div>
+      <div class="stat-box" data-icon="⏳"><div class="stat-lbl">Pending Withdrawals</div><div class="stat-val text-warn" id="adPendingWd">0</div><div class="stat-sub">Awaiting approval</div></div>
+      <div class="stat-box" data-icon="🎫"><div class="stat-lbl">Total Bets</div><div class="stat-val" id="adTotalBets">0</div><div class="stat-sub">All time</div></div>
+      <div class="stat-box" data-icon="💬"><div class="stat-lbl">Open Tickets</div><div class="stat-val text-blue" id="adOpenTickets">0</div><div class="stat-sub">Support requests</div></div>
     </div>
-    <div class="card" style="display:none;">
-      <div class="card-header"><div class="card-title">📋 Recent Activity</div></div>
-      <div id="adminRecentActivity" class="fs-13 text-muted">Loading...</div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">📋 Recent Activity <span class="realtime-badge" style="margin-left:8px;">Auto-refresh: 10s</span></div></div>
+      <div id="adminRecentActivity" class="fs-13">Loading...</div>
     </div>
   </div>
 
@@ -288,27 +315,24 @@ input[type=checkbox].toggle:checked::after{left:18px;}
     </div>
 
     <!-- RUN SCRAPER CARD -->
-    <div class="card mb-16" style="border-color:rgba(0,200,83,0.35);">
-      <div class="card-header" style="display:none;">
-        <div class="card-title" style="display:flex;align-items:center;gap:10px;">
-          🔄 Fetch Live Matches from Cricbuzz
-          <span id="scraperStatusBadge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(122,139,168,0.15);color:#6a80a0;">Never Run</span>
-        </div>
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">🔄 Fetch Live Matches from Cricbuzz</div>
+        <span id="scraperStatusBadge" class="badge badge-muted">Never Run</span>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Runs <strong style="color:var(--text);">Match_details.py</strong> → scrapes Cricbuzz → saves <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;">matches.json</code>. Only matches within next 48 hours IST are shown to users for betting.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Runs <strong>Match_details.py</strong> → scrapes Cricbuzz → saves <code>matches.json</code>. Only matches within next 48 hours are shown.</p>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <button class="btn btn-success" id="runScraperBtn" onclick="runScraper()">▶ Run Scraper Now</button>
         <button class="btn btn-outline btn-sm" onclick="checkScraperStatus()">↻ Check Status</button>
         <span id="scraperMsg" style="font-size:12px;color:var(--muted);"></span>
       </div>
-      <div id="scraperLog" style="display:none;margin-top:12px;background:var(--bg3);padding:10px;border-radius:6px;font-size:11px;color:#4caf50;font-family:monospace;white-space:pre-wrap;max-height:80px;overflow:auto;"></div>
-      <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;">
+      <div class="flex-between mt-12 pt-10" style="border-top:1px solid var(--border);font-size:12px;color:var(--muted);">
         <span>Last fetch: <strong id="scraperLastRun" style="color:var(--text);">—</strong></span>
-        <span>Auto: every 30 min while server runs</span>
+        <span>Auto: every 30 min</span>
       </div>
     </div>
 
-    <div class="alert alert-info mb-16">Toss settlement runs automatically from the toss field in matches.json every 20s. Use the manual settle button per match if needed.</div>
+    <div class="alert alert-info mb-16">Toss settlement runs automatically. Use manual settle button per match if needed.</div>
 
     <!-- Add Match -->
     <div class="card mb-16">
@@ -326,37 +350,49 @@ input[type=checkbox].toggle:checked::after{left:18px;}
 
     <div class="card">
       <div class="table-wrap">
-        <table><thead><tr><th>Match</th><th>Time</th><th>Status</th><th>Bets</th><th>Toss Info</th><th>Winner</th><th>Actions</th></tr></thead>
-        <tbody id="adminMatchTable"></tbody></table>
+        <table>
+          <thead><tr><th>Match</th><th>Time</th><th>Status</th><th>Bets</th><th>Toss Info</th><th>Winner</th><th>Actions</th></tr></thead>
+          <tbody id="adminMatchTable"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
   <!-- ===== DEPOSITS ===== -->
   <div class="panel" id="panel-deposits">
-    <div class="page-title">💳 Deposit Requests</div>
+    <div class="flex-between mb-16">
+      <div class="page-title" style="margin:0;">💳 Deposit Requests</div>
+      <span class="realtime-badge">Real-time</span>
+    </div>
     <div class="tabs">
-      <button class="tab active" onclick="adminDepTab('pending',this)">Pending</button>
+      <button class="tab active" onclick="adminDepTab('pending',this)">Pending <span id="pendingDepCount" class="badge badge-warning" style="margin-left:6px;">0</span></button>
       <button class="tab" onclick="adminDepTab('approved',this)">Approved</button>
       <button class="tab" onclick="adminDepTab('rejected',this)">Rejected</button>
     </div>
     <div class="card"><div class="table-wrap">
-      <table><thead><tr><th>User</th><th>Amount</th><th>UTR</th><th>Screenshot</th><th>Date</th><th>Actions</th></tr></thead>
-      <tbody id="adminDepTable"></tbody></table>
+      <table>
+        <thead><tr><th>User</th><th>Amount</th><th>UTR</th><th>Screenshot</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="adminDepTable"></tbody>
+      </table>
     </div></div>
   </div>
 
   <!-- ===== WITHDRAWALS ===== -->
   <div class="panel" id="panel-withdrawals">
-    <div class="page-title">🏦 Withdrawal Requests</div>
+    <div class="flex-between mb-16">
+      <div class="page-title" style="margin:0;">🏦 Withdrawal Requests</div>
+      <span class="realtime-badge">Real-time</span>
+    </div>
     <div class="tabs">
-      <button class="tab active" onclick="adminWdTab('pending',this)">Pending</button>
+      <button class="tab active" onclick="adminWdTab('pending',this)">Pending <span id="pendingWdCount" class="badge badge-warning" style="margin-left:6px;">0</span></button>
       <button class="tab" onclick="adminWdTab('approved',this)">Approved</button>
       <button class="tab" onclick="adminWdTab('rejected',this)">Rejected</button>
     </div>
     <div class="card"><div class="table-wrap">
-      <table><thead><tr><th>User</th><th>Amount</th><th>Bank Details</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody id="adminWdTable"></tbody></table>
+      <table>
+        <thead><tr><th>User</th><th>Amount</th><th>Bank Details</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="adminWdTable"></tbody>
+      </table>
     </div></div>
   </div>
 
@@ -368,8 +404,10 @@ input[type=checkbox].toggle:checked::after{left:18px;}
       <div id="settleLogs" class="fs-12 text-muted">No logs yet.</div>
     </div>
     <div class="card"><div class="table-wrap">
-      <table><thead><tr><th>User</th><th>Match</th><th>Team</th><th>Amount</th><th>Odds</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody id="adminBetsTable"></tbody></table>
+      <table>
+        <thead><tr><th>User</th><th>Match</th><th>Team</th><th>Amount</th><th>Odds</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody id="adminBetsTable"></tbody>
+      </table>
     </div></div>
   </div>
 
@@ -380,8 +418,10 @@ input[type=checkbox].toggle:checked::after{left:18px;}
       <input type="text" id="userSearch" class="form-inp" placeholder="Search by username or phone..." style="flex:1;" oninput="renderAdminUsers()">
     </div>
     <div class="card"><div class="table-wrap">
-      <table><thead><tr><th>Username</th><th>Phone</th><th>Balance</th><th>Wagered</th><th>Total Dep.</th><th>VIP</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
-      <tbody id="adminUsersTable"></tbody></table>
+      <table>
+        <thead><tr><th>Username</th><th>Phone</th><th>Balance</th><th>Wagered</th><th>Total Dep.</th><th>VIP</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody id="adminUsersTable"></tbody>
+      </table>
     </div></div>
   </div>
 
@@ -408,8 +448,10 @@ input[type=checkbox].toggle:checked::after{left:18px;}
       <button class="tab" onclick="adminTicketTab('resolved',this)">Resolved</button>
     </div>
     <div class="card"><div class="table-wrap">
-      <table><thead><tr><th>User</th><th>Subject</th><th>Message</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
-      <tbody id="adminTicketsTable"></tbody></table>
+      <table>
+        <thead><tr><th>User</th><th>Subject</th><th>Message</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="adminTicketsTable"></tbody>
+      </table>
     </div></div>
   </div>
 
@@ -418,7 +460,6 @@ input[type=checkbox].toggle:checked::after{left:18px;}
     <div class="page-title">⚙️ Settings</div>
     <div class="grid-2">
       <div>
-        <!-- Support Links -->
         <div class="card mb-16">
           <div class="sec-title">🔗 Support Links</div>
           <div class="form-grp"><label class="form-lbl">WhatsApp Number</label><input type="text" id="setWhatsapp" class="form-inp" placeholder="+91 9999999999"></div>
@@ -426,8 +467,6 @@ input[type=checkbox].toggle:checked::after{left:18px;}
           <div class="form-grp"><label class="form-lbl">Custom Link</label><input type="text" id="setCustomSupport" class="form-inp" placeholder="https://..."></div>
           <button class="btn btn-primary btn-block" onclick="saveSupportLinks()">Save Links</button>
         </div>
-
-        <!-- Bet Limits -->
         <div class="card mb-16">
           <div class="sec-title">🎯 Bet Limits</div>
           <div class="input-row">
@@ -436,8 +475,6 @@ input[type=checkbox].toggle:checked::after{left:18px;}
           </div>
           <button class="btn btn-primary btn-block" onclick="saveBetLimits()">Save Limits</button>
         </div>
-
-        <!-- Maintenance -->
         <div class="card mb-16">
           <div class="sec-title">🔧 Maintenance Mode</div>
           <div class="info-row">
@@ -447,20 +484,14 @@ input[type=checkbox].toggle:checked::after{left:18px;}
               <span class="fs-12" id="maintenanceLabel">Off</span>
             </div>
           </div>
-          <p class="fs-12 text-muted mt-8">Locks users out of the website while you perform updates.</p>
         </div>
-
-        <!-- Admin Security -->
         <div class="card">
           <div class="sec-title">🔒 Admin Security</div>
           <div class="form-grp"><label class="form-lbl">New Admin Password</label><input type="password" id="adminNewPass" class="form-inp" placeholder="New password"></div>
           <button class="btn btn-outline btn-block" onclick="changeAdminPass()">Update Password</button>
-          <div class="info-row mt-12"><span class="info-lbl">Last Login</span><span id="adminLastLogin" class="fs-12 text-muted">-</span></div>
         </div>
       </div>
-
       <div>
-        <!-- Bank Accounts -->
         <div class="card mb-16">
           <div class="sec-title">🏦 Bank Accounts</div>
           <div id="adminBankList" class="mb-12"></div>
@@ -478,8 +509,6 @@ input[type=checkbox].toggle:checked::after{left:18px;}
           </div>
           <button class="btn btn-success btn-block" onclick="addBankAccount()">Add Bank Account</button>
         </div>
-
-        <!-- Deposit Coupons -->
         <div class="card mb-16">
           <div class="sec-title">🎁 Deposit Coupons</div>
           <div id="couponList" class="mb-12"></div>
@@ -489,16 +518,12 @@ input[type=checkbox].toggle:checked::after{left:18px;}
             <div class="form-grp" style="display:flex;align-items:flex-end;"><button class="btn btn-success btn-block btn-sm" onclick="addCoupon()">Add</button></div>
           </div>
         </div>
-
-        <!-- Add Coins to User -->
         <div class="card mb-16">
           <div class="sec-title">🎁 Add Coins to User</div>
           <div class="form-grp"><label class="form-lbl">Username</label><input type="text" id="bonusUser" class="form-inp"></div>
           <div class="form-grp"><label class="form-lbl">Amount</label><input type="number" id="bonusAmount" class="form-inp"></div>
           <button class="btn btn-success btn-block" onclick="addBonusToUser()">Add Coins</button>
         </div>
-
-        <!-- Promo Codes -->
         <div class="card">
           <div class="sec-title">🎟️ Promo Codes</div>
           <div id="promoCodeList" class="mb-12"></div>
@@ -518,20 +543,18 @@ input[type=checkbox].toggle:checked::after{left:18px;}
 </div><!-- view-admin -->
 
 <script>
-// ─────────────────────────────────────────────────────────
-// BACKEND CONFIG — update this when deploying to Netlify
-// Set to your Railway/Render backend URL.
-// Example: const BACKEND_URL = 'https://betvibe-backend.up.railway.app';
-const BACKEND_URL = 'https://cdn.jsdelivr.net/gh/Dhruvp25-stack/betvibenew@main';
-// Must match ADMIN_KEY in server.py
+// =====================================================================
+// BACKEND CONFIG
+// =====================================================================
+const BACKEND_URL = 'https://web-production-e046e.up.railway.app';
 const ADMIN_KEY = 'betvibe@2025';
+
 function apiUrl(path) {
   return BACKEND_URL ? BACKEND_URL.replace(/\/$/, '') + path : path;
 }
-// ─────────────────────────────────────────────────────────
 
 // =====================================================================
-// DATABASE — same storage as main website (shared localStorage)
+// DATABASE
 // =====================================================================
 const DB = {
   get: k => { try { return JSON.parse(localStorage.getItem('bv_'+k)); } catch(e) { return null; } },
@@ -563,6 +586,7 @@ let adminDepFilter = 'pending';
 let adminWdFilter = 'pending';
 let adminTicketFilter = 'open';
 let qrDataURL = null;
+let realtimeInterval = null;
 
 // =====================================================================
 // INIT
@@ -570,7 +594,6 @@ let qrDataURL = null;
 initDB();
 showView('view-login');
 
-// Clock
 setInterval(() => {
   const el = document.getElementById('topbarTime');
   if (el) el.textContent = new Date().toLocaleTimeString();
@@ -601,23 +624,76 @@ function logAdminAction(action) {
 }
 
 // =====================================================================
+// MOBILE SIDEBAR
+// =====================================================================
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('mobileMenuBtn');
+  sidebar.classList.toggle('mobile-open');
+  btn.classList.toggle('active');
+  btn.textContent = sidebar.classList.contains('mobile-open') ? '✕' : '☰';
+}
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', function(e) {
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('mobileMenuBtn');
+  if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
+    if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
+      sidebar.classList.remove('mobile-open');
+      btn.classList.remove('active');
+      btn.textContent = '☰';
+    }
+  }
+});
+
+// =====================================================================
 // LOGIN
 // =====================================================================
 function doAdminLogin() {
   const u = document.getElementById('admin-user').value;
   const p = document.getElementById('admin-pass').value;
   if (u==='admin' && p==='DDR252429') {
-    document.getElementById('adminLastLogin').textContent = new Date().toLocaleString();
     showView('view-admin');
     goPanel('dashboard');
+    startRealtimeUpdates();
   } else {
     toast('Invalid admin credentials', 'danger');
   }
 }
 
-document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') doAdminLogin(); });
+function doAdminLogout() {
+  stopRealtimeUpdates();
+  showView('view-login');
+}
 
-function doAdminLogout() { showView('view-login'); }
+// =====================================================================
+// REAL-TIME UPDATES (Polling every 10 seconds)
+// =====================================================================
+function startRealtimeUpdates() {
+  if (realtimeInterval) clearInterval(realtimeInterval);
+  realtimeInterval = setInterval(() => {
+    if (document.getElementById('panel-dashboard').classList.contains('active')) {
+      renderDashboard();
+    }
+    if (document.getElementById('panel-deposits').classList.contains('active')) {
+      renderDeposits(adminDepFilter);
+    }
+    if (document.getElementById('panel-withdrawals').classList.contains('active')) {
+      renderWithdrawals(adminWdFilter);
+    }
+    if (document.getElementById('panel-bets').classList.contains('active')) {
+      renderBets();
+    }
+  }, 10000);
+}
+
+function stopRealtimeUpdates() {
+  if (realtimeInterval) {
+    clearInterval(realtimeInterval);
+    realtimeInterval = null;
+  }
+}
 
 // =====================================================================
 // PANEL NAVIGATION
@@ -634,6 +710,14 @@ function goPanel(name) {
   document.getElementById('panel-'+name).classList.add('active');
   document.getElementById('alink-'+name).classList.add('active');
   document.getElementById('topbarTitle').textContent = panelTitles[name]||name;
+  
+  // Close mobile sidebar after navigation
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('mobileMenuBtn').classList.remove('active');
+    document.getElementById('mobileMenuBtn').textContent = '☰';
+  }
+  
   const loaders = { dashboard:renderDashboard, matches:renderMatches, deposits:()=>renderDeposits('pending'), withdrawals:()=>renderWithdrawals('pending'), bets:renderBets, users:renderUsers, reports:renderReports, tickets:()=>renderTickets('open'), settings:loadSettings };
   if (loaders[name]) loaders[name]();
 }
@@ -647,32 +731,58 @@ function renderDashboard() {
   const withdrawals = DB.get('withdrawals')||[];
   const bets = DB.get('bets')||[];
   const tickets = DB.get('tickets')||[];
+  
   const totalDep = deposits.filter(d=>d.status==='approved').reduce((s,d)=>s+d.amount,0);
   const totalWd = withdrawals.filter(w=>w.status==='approved').reduce((s,w)=>s+w.amount,0);
+  const pendingDep = deposits.filter(d=>d.status==='pending').length;
+  const pendingWd = withdrawals.filter(w=>w.status==='pending').length;
+  
   document.getElementById('adTotalUsers').textContent = users.length;
   document.getElementById('adTotalDep').textContent = totalDep.toFixed(0);
   document.getElementById('adTotalWd').textContent = totalWd.toFixed(0);
   document.getElementById('adNetProfit').textContent = (totalDep-totalWd).toFixed(0);
-  document.getElementById('adPendingDep').textContent = deposits.filter(d=>d.status==='pending').length;
-  document.getElementById('adPendingWd').textContent = withdrawals.filter(w=>w.status==='pending').length;
+  document.getElementById('adPendingDep').textContent = pendingDep;
+  document.getElementById('adPendingWd').textContent = pendingWd;
   document.getElementById('adTotalBets').textContent = bets.length;
   document.getElementById('adOpenTickets').textContent = tickets.filter(t=>t.status==='open').length;
-  const activity = [
-    ...deposits.slice(-4).reverse().map(d=>`<div class="info-row"><span class="info-lbl">${d.username}</span><span class="badge badge-warning">Deposit ₹${d.amount}</span><span class="fs-11 text-muted">${d.date}</span></div>`),
-    ...withdrawals.slice(-4).reverse().map(w=>`<div class="info-row"><span class="info-lbl">${w.username}</span><span class="badge badge-info">Withdraw ₹${w.amount}</span><span class="fs-11 text-muted">${w.date}</span></div>`)
-  ];
-  document.getElementById('adminRecentActivity').innerHTML = activity.join('')||'<span class="text-muted">No recent activity</span>';
+  
+  // Update pending counts in tabs
+  const pendingDepSpan = document.getElementById('pendingDepCount');
+  const pendingWdSpan = document.getElementById('pendingWdCount');
+  if (pendingDepSpan) pendingDepSpan.textContent = pendingDep;
+  if (pendingWdSpan) pendingWdSpan.textContent = pendingWd;
+  
+  const recentDeposits = deposits.filter(d=>d.status==='pending').slice(0,5);
+  const recentWithdrawals = withdrawals.filter(w=>w.status==='pending').slice(0,5);
+  
+  let activityHtml = '';
+  if (recentDeposits.length) {
+    activityHtml += '<div class="sec-title" style="margin-top:8px;">⏳ Pending Deposits</div>';
+    recentDeposits.forEach(d => {
+      activityHtml += `<div class="info-row"><span class="info-lbl">${d.username}</span><span class="badge badge-warning">₹${d.amount}</span><span class="fs-11 text-muted">${d.date}</span><button class="btn btn-success btn-xs" onclick="approveDeposit('${d.id}')">Approve</button></div>`;
+    });
+  }
+  if (recentWithdrawals.length) {
+    activityHtml += '<div class="sec-title" style="margin-top:8px;">⏳ Pending Withdrawals</div>';
+    recentWithdrawals.forEach(w => {
+      activityHtml += `<div class="info-row"><span class="info-lbl">${w.username}</span><span class="badge badge-warning">₹${w.amount}</span><span class="fs-11 text-muted">${w.date}</span><button class="btn btn-success btn-xs" onclick="approveWd('${w.id}')">Approve</button></div>`;
+    });
+  }
+  if (!recentDeposits.length && !recentWithdrawals.length) {
+    activityHtml = '<span class="text-muted">No pending requests</span>';
+  }
+  
+  document.getElementById('adminRecentActivity').innerHTML = activityHtml;
 }
 
 // =====================================================================
-// SCRAPER — calls Flask /api/run-scraper then polls status
+// SCRAPER FUNCTIONS
 // =====================================================================
-let scraperPollInterval = null;
-
 async function runScraper() {
   const btn = document.getElementById('runScraperBtn');
   const msg = document.getElementById('scraperMsg');
   const badge = document.getElementById('scraperStatusBadge');
+  
   btn.disabled = true;
   btn.textContent = '⏳ Starting...';
   msg.textContent = 'Sending request to server...';
@@ -680,88 +790,66 @@ async function runScraper() {
   try {
     const res = await fetch(apiUrl('/api/run-scraper'), {
       method: 'POST',
-      headers: BACKEND_URL ? { 'X-Admin-Key': ADMIN_KEY } : {}
+      headers: { 'X-Admin-Key': ADMIN_KEY }
     });
     const json = await res.json();
     if (json.ok) {
       msg.textContent = json.msg;
       badge.textContent = '🔄 Running';
-      badge.style.background = 'rgba(255,152,0,0.15)';
-      badge.style.color = '#ff9800';
+      badge.className = 'badge badge-warning';
       btn.textContent = '⏳ Running...';
-      // Poll every 3 seconds
-      scraperPollInterval = setInterval(checkScraperStatus, 3000);
+      setTimeout(checkScraperStatus, 2000);
     } else {
       msg.textContent = '⚠️ ' + json.msg;
       btn.disabled = false;
       btn.textContent = '▶ Run Scraper Now';
     }
   } catch (e) {
-    msg.textContent = '';
+    msg.textContent = 'Server unreachable. Using local data.';
     btn.disabled = false;
     btn.textContent = '▶ Run Scraper Now';
   }
 }
 
 async function checkScraperStatus() {
-  return;
   try {
     const res = await fetch(apiUrl('/api/scraper-status'), {
-      headers: BACKEND_URL ? { 'X-Admin-Key': ADMIN_KEY } : {}
+      headers: { 'X-Admin-Key': ADMIN_KEY }
     });
     const json = await res.json();
     const btn = document.getElementById('runScraperBtn');
     const msg = document.getElementById('scraperMsg');
     const badge = document.getElementById('scraperStatusBadge');
-    const logEl = document.getElementById('scraperLog');
     const lastRun = document.getElementById('scraperLastRun');
 
     if (json.last_run) lastRun.textContent = json.last_run;
 
     if (json.running) {
       badge.textContent = '🔄 Running';
-      badge.style.background = 'rgba(255,152,0,0.15)';
-      badge.style.color = '#ff9800';
+      badge.className = 'badge badge-warning';
       btn.textContent = '⏳ Running...';
       btn.disabled = true;
-      msg.textContent = 'Scraping Cricbuzz... please wait (may take ~60 seconds)';
+      msg.textContent = 'Scraping Cricbuzz... please wait';
+      setTimeout(checkScraperStatus, 3000);
     } else {
-      // Done
-      clearInterval(scraperPollInterval);
-      scraperPollInterval = null;
       btn.disabled = false;
       btn.textContent = '▶ Run Scraper Now';
-
+      
       if (json.error) {
         badge.textContent = '❌ Error';
-        badge.style.background = 'rgba(244,67,54,0.15)';
-        badge.style.color = '#f44336';
+        badge.className = 'badge badge-danger';
         msg.textContent = 'Scraper finished with errors.';
-        logEl.textContent = json.error;
-        logEl.style.display = 'block';
-        logEl.style.color = '#f44336';
       } else if (json.last_run) {
         badge.textContent = '✅ Done';
-        badge.style.background = 'rgba(0,200,83,0.15)';
-        badge.style.color = '#00c853';
-        msg.textContent = '✅ Matches fetched! Reloading...';
-        if (json.last_result) {
-          logEl.textContent = json.last_result;
-          logEl.style.display = 'block';
-          logEl.style.color = '#4caf50';
-        }
-        // Re-load matches from JSON and update localStorage
-        setTimeout(async () => {
-          await reloadMatchesFromJSON();
-          msg.textContent = '✅ Done! Matches refreshed.';
-          renderMatches();
-          toast('✅ Matches updated from Cricbuzz!', 'success');
-          logAdminAction('Ran scraper — matches.json updated');
-        }, 1500);
+        badge.className = 'badge badge-success';
+        msg.textContent = '✅ Matches fetched!';
+        await reloadMatchesFromJSON();
+        renderMatches();
+        toast('✅ Matches updated from Cricbuzz!', 'success');
       }
     }
   } catch(e) {
-    // server unreachable
+    console.log('Status check failed:', e);
   }
 }
 
@@ -779,11 +867,10 @@ async function reloadMatchesFromJSON() {
     const converted = raw.map((m, idx) => {
       const matchStr = m.match || m.match_link_text || '';
       let team1 = 'Team A', team2 = 'Team B';
-      const vsMatch = matchStr.match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i) ||
-                      (m.match_link_text||'').match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i);
+      const vsMatch = matchStr.match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i);
       if (vsMatch) {
         team1 = vsMatch[1].trim();
-        team2 = vsMatch[2].trim().split(/[\-•]/)[0].trim();
+        team2 = vsMatch[2].trim();
       }
 
       let tossResult = null;
@@ -791,34 +878,27 @@ async function reloadMatchesFromJSON() {
         const tw = m.toss.match(/^([^w]+)\s+won the toss/i);
         if (tw) {
           const winner = tw[1].trim();
-          if (winner.toLowerCase().includes(team1.toLowerCase()) ||
-              team1.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w) && w.length > 2))
-            tossResult = team1;
-          else if (winner.toLowerCase().includes(team2.toLowerCase()) ||
-              team2.toLowerCase().split(/\s+/).some(w => winner.toLowerCase().includes(w) && w.length > 2))
-            tossResult = team2;
+          if (winner.toLowerCase().includes(team1.toLowerCase())) tossResult = team1;
+          else if (winner.toLowerCase().includes(team2.toLowerCase())) tossResult = team2;
           else tossResult = winner;
         }
       }
 
       let matchTimestamp = now + (idx + 1) * 3 * 60 * 60 * 1000;
-      if (m.date && m.time) {
+      if (m.date_ist && m.time_ist) {
         try {
-          const timeStr = m.time.split(',')[0].replace(' LOCAL','').trim();
-          const dateStr = m.date === 'Today' ? new Date().toDateString() : m.date;
-          const parsed = new Date(dateStr + ' ' + timeStr);
+          const parsed = new Date(m.date_ist.split('-').reverse().join('-') + ' ' + m.time_ist);
           if (!isNaN(parsed)) matchTimestamp = parsed.getTime();
         } catch(e) {}
       }
 
       const matchIST = matchTimestamp + IST_OFFSET;
-      if (matchIST > cutoffIST && !tossResult) return null; // outside 48h window
+      if (matchIST > cutoffIST && !tossResult) return null;
 
       const old = existing.find(e => e.id === 'm_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12));
       const status = tossResult ? 'completed' : matchTimestamp < now ? 'live' : 'upcoming';
-      const marketOpen = !tossResult && status === 'upcoming' && (matchTimestamp - now) > 30 * 60 * 1000;
+      const marketOpen = !tossResult && status === 'upcoming' && (matchTimestamp - now) > 60 * 60 * 1000;
 
-      // If newly settled, auto-settle bets
       if (tossResult && old && !old.tossResult) {
         adminSettleTossQuiet('m_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12), tossResult, team1, team2);
       }
@@ -826,20 +906,20 @@ async function reloadMatchesFromJSON() {
       return {
         id: 'm_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12),
         team1, team2, flag1:'🏏', flag2:'🏏',
-        league: m.series || 'Cricket', series: m.series || '',
+        league: m.series || 'Cricket',
         time: matchTimestamp, status, tossResult, toss: m.toss || '',
         totalBets: old ? (old.totalBets || 0) : 0,
         marketOpen,
-        venue: m.venue || m.stadium || '', stadium: m.stadium || '',
-        city: m.city || '', capacity: m.capacity || '',
-        ends: m.ends || '', umpires: m.umpires || '',
-        referee: m.referee || '', date: m.date || '', matchTime: m.time || ''
+        venue: m.venue || '', city: m.city || ''
       };
     }).filter(Boolean);
 
     DB.set('matches', converted);
     return converted;
-  } catch(e) { return []; }
+  } catch(e) { 
+    console.log('Failed to reload matches:', e);
+    return []; 
+  }
 }
 
 function adminSettleTossQuiet(matchId, winner, team1, team2) {
@@ -865,14 +945,17 @@ function adminSettleTossQuiet(matchId, winner, team1, team2) {
   }
 }
 
-// Auto-refresh matches from JSON every 30 seconds in admin
+// Auto-refresh matches
 setInterval(async () => {
   const data = await reloadMatchesFromJSON();
-  if (data && data.length) renderMatches();
+  if (data && data.length && document.getElementById('panel-matches').classList.contains('active')) {
+    renderMatches();
+  }
 }, 30000);
 
-// On load, also check scraper status
-window.addEventListener('load', () => { checkScraperStatus(); reloadMatchesFromJSON().then(()=>renderMatches()); });
+window.addEventListener('load', () => { 
+  reloadMatchesFromJSON().then(()=>renderMatches());
+});
 
 // =====================================================================
 // MATCHES
@@ -880,26 +963,28 @@ window.addEventListener('load', () => { checkScraperStatus(); reloadMatchesFromJ
 function renderMatches() {
   const matches = DB.get('matches')||[];
   const body = document.getElementById('adminMatchTable');
-  body.innerHTML = matches.length ? matches.map(m => `<tr>
-    <td>
-      <strong>${m.team1} vs ${m.team2}</strong>
-      <br><span class="text-muted fs-11">${m.league||m.series||''}</span>
-      ${m.venue ? `<br><span style="font-size:10px;color:var(--dim);">📍 ${m.city||m.venue}</span>` : ''}
-    </td>
-    <td class="fs-12">${new Date(m.time).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
-    <td><span class="badge badge-${m.status==='live'?'danger':m.status==='upcoming'?'info':m.status==='completed'?'success':'muted'}">${m.status}</span></td>
-    <td>${m.totalBets||0}</td>
-    <td>${m.toss ? `<div style="font-size:11px;color:var(--muted);max-width:160px;">${m.toss}</div>` : '—'}</td>
-    <td>${m.tossResult ? `<span class="badge badge-success">🏏 ${m.tossResult}</span>` : '—'}</td>
-    <td style="white-space:nowrap;">
-      ${!m.tossResult ? `
-        <button class="btn btn-success btn-xs" onclick="adminSettleToss('${m.id}','${m.team1}')">✓ ${m.team1}</button>
-        <button class="btn btn-xs mt-4" style="background:var(--blue-mid);color:#fff;" onclick="adminSettleToss('${m.id}','${m.team2}')">✓ ${m.team2}</button>
-      ` : '<span class="badge badge-success">Settled</span>'}
-      <button class="btn btn-warn btn-xs mt-4" onclick="suspendMarket('${m.id}')">Suspend</button>
-      <button class="btn btn-danger btn-xs mt-4" onclick="deleteMatch('${m.id}')">Del</button>
-    </td>
-  </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No matches. Click "Run Scraper Now" to fetch from Cricbuzz.</td></tr>';
+  body.innerHTML = matches.length ? matches.map(m => `
+    <tr>
+      <td>
+        <strong>${m.team1} vs ${m.team2}</strong>
+        <br><span class="text-muted fs-11">${m.league||''}</span>
+        ${m.venue ? `<br><span style="font-size:10px;color:var(--dim);">📍 ${m.city||m.venue}</span>` : ''}
+      </td>
+      <td class="fs-12">${new Date(m.time).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+      <td><span class="badge badge-${m.status==='live'?'danger':m.status==='upcoming'?'info':m.status==='completed'?'success':'muted'}">${m.status}</span></td>
+      <td>${m.totalBets||0}</td>
+      <td>${m.toss ? `<div style="font-size:11px;color:var(--muted);max-width:160px;">${m.toss}</div>` : '—'}</td>
+      <td>${m.tossResult ? `<span class="badge badge-success">🏏 ${m.tossResult}</span>` : '—'}</td>
+      <td style="white-space:nowrap;">
+        ${!m.tossResult && m.status !== 'completed' ? `
+          <button class="btn btn-success btn-xs" onclick="adminSettleToss('${m.id}','${m.team1}')">✓ ${m.team1}</button>
+          <button class="btn btn-xs mt-4" style="background:var(--blue-mid);color:#fff;" onclick="adminSettleToss('${m.id}','${m.team2}')">✓ ${m.team2}</button>
+        ` : m.tossResult ? '<span class="badge badge-success">Settled</span>' : ''}
+        <button class="btn btn-warn btn-xs mt-4" onclick="suspendMarket('${m.id}')">Suspend</button>
+        <button class="btn btn-danger btn-xs mt-4" onclick="deleteMatch('${m.id}')">Del</button>
+      </td>
+    </tr>
+  `).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No matches. Click "Run Scraper Now" to fetch from Cricbuzz.</td></tr>';
 }
 
 function adminSettleToss(matchId, winner) {
@@ -956,10 +1041,10 @@ function deleteMatch(matchId) {
 }
 
 function addDemoMatch() {
-  const teams = [['Kenya','Zimbabwe','🇰🇪','🇿🇼'],['Nepal','UAE','🇳🇵','🇦🇪'],['Ireland','Scotland','🇮🇪','🏴󠁧󠁢󠁳󠁣󠁴󠁿']];
+  const teams = [['Kenya','Zimbabwe'],['Nepal','UAE'],['Ireland','Scotland']];
   const t = teams[Math.floor(Math.random()*teams.length)];
   const matches = DB.get('matches')||[];
-  matches.push({ id:'m'+Date.now(), team1:t[0], team2:t[1], flag1:t[2], flag2:t[3], league:'ICC Development League', time:Date.now()+3*60*60*1000, status:'upcoming', tossResult:null, totalBets:0, marketOpen:true });
+  matches.push({ id:'m'+Date.now(), team1:t[0], team2:t[1], flag1:'🏏', flag2:'🏏', league:'ICC Development League', time:Date.now()+3*60*60*1000, status:'upcoming', tossResult:null, totalBets:0, marketOpen:true });
   DB.set('matches', matches);
   logAdminAction(`Added demo match: ${t[0]} vs ${t[1]}`);
   toast('Demo match added!', 'success');
@@ -995,14 +1080,16 @@ function adminDepTab(filter, el) {
 
 function renderDeposits(filter) {
   const deposits = (DB.get('deposits')||[]).filter(d=>d.status===filter);
-  document.getElementById('adminDepTable').innerHTML = deposits.length ? deposits.map(d=>`<tr>
-    <td><strong>${d.username}</strong></td>
-    <td class="text-success fw-600">₹${d.amount}${d.couponBonus?` <span class="badge badge-success">+🪙${d.couponBonus}</span>`:''}</td>
-    <td class="fs-12">${d.utr}</td>
-    <td class="fs-12">${d.screenshot||'N/A'}</td>
-    <td class="fs-12">${d.date}</td>
-    <td>${filter==='pending'?`<button class="btn btn-success btn-xs" onclick="approveDeposit('${d.id}')">✓ Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectDeposit('${d.id}')">✗ Reject</button>`:`<span class="badge badge-${filter==='approved'?'success':'danger'}">${filter}</span>`}</td>
-  </tr>`).join('') : `<tr><td colspan="6" class="text-center text-muted">No ${filter} deposits</td></tr>`;
+  document.getElementById('adminDepTable').innerHTML = deposits.length ? deposits.map(d=>`
+    <tr>
+      <td><strong>${d.username}</strong></td>
+      <td class="text-success fw-600">₹${d.amount}${d.couponBonus?` <span class="badge badge-success">+🪙${d.couponBonus}</span>`:''}</td>
+      <td class="fs-12">${d.utr}</td>
+      <td class="fs-12">${d.screenshot||'N/A'}</td>
+      <td class="fs-12">${d.date}</td>
+      <td>${filter==='pending'?`<button class="btn btn-success btn-xs" onclick="approveDeposit('${d.id}')">✓ Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectDeposit('${d.id}')">✗ Reject</button>`:`<span class="badge badge-${filter==='approved'?'success':'danger'}">${filter}</span>`}</td>
+    </tr>
+  `).join('') : `<tr><td colspan="6" class="text-center text-muted">No ${filter} deposits</td></tr>`;
 }
 
 function approveDeposit(id) {
@@ -1043,14 +1130,16 @@ function adminWdTab(filter, el) {
 
 function renderWithdrawals(filter) {
   const wds = (DB.get('withdrawals')||[]).filter(w=>w.status===filter);
-  document.getElementById('adminWdTable').innerHTML = wds.length ? wds.map(w=>`<tr>
-    <td><strong>${w.username}</strong></td>
-    <td class="text-danger fw-600">₹${w.amount}</td>
-    <td class="fs-12">${w.name||''}<br>${w.accNum||''}<br>${w.ifsc||''}<br>${w.bank||''}</td>
-    <td class="fs-12">${w.date}</td>
-    <td><span class="badge badge-${w.status==='approved'?'success':w.status==='rejected'?'danger':'warning'}">${w.status}</span></td>
-    <td>${filter==='pending'?`<button class="btn btn-success btn-xs" onclick="approveWd('${w.id}')">✓ Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectWd('${w.id}')">✗ Reject</button>`:'—'}</td>
-  </tr>`).join('') : `<tr><td colspan="6" class="text-center text-muted">No ${filter} withdrawals</td></tr>`;
+  document.getElementById('adminWdTable').innerHTML = wds.length ? wds.map(w=>`
+    <tr>
+      <td><strong>${w.username}</strong></td>
+      <td class="text-danger fw-600">₹${w.amount}</td>
+      <td class="fs-12">${w.name||''}<br>${w.accNum||''}<br>${w.ifsc||''}<br>${w.bank||''}</td>
+      <td class="fs-12">${w.date}</td>
+      <td><span class="badge badge-${w.status==='approved'?'success':w.status==='rejected'?'danger':'warning'}">${w.status}</span></td>
+      <td>${filter==='pending'?`<button class="btn btn-success btn-xs" onclick="approveWd('${w.id}')">✓ Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectWd('${w.id}')">✗ Reject</button>`:'—'}</td>
+    </tr>
+  `).join('') : `<tr><td colspan="6" class="text-center text-muted">No ${filter} withdrawals</td></tr>`;
 }
 
 function approveWd(id) {
@@ -1062,6 +1151,7 @@ function approveWd(id) {
   logAdminAction(`Approved withdrawal ₹${wd.amount} for ${wd.username}`);
   toast('Withdrawal approved!', 'success');
   renderWithdrawals('pending');
+  renderDashboard();
 }
 
 function rejectWd(id) {
@@ -1085,15 +1175,17 @@ function renderBets() {
   const bets = DB.get('bets')||[];
   const logs = DB.get('settleLogs')||[];
   document.getElementById('settleLogs').innerHTML = logs.length ? logs.map(l=>`<div class="info-row"><span class="info-lbl">${l.match}</span><span>Winner: <strong>${l.winner}</strong> | ${l.settled} bets</span><span class="fs-11 text-muted">${l.time}</span></div>`).join('') : 'No logs yet.';
-  document.getElementById('adminBetsTable').innerHTML = bets.length ? bets.map(b=>`<tr>
-    <td>${b.username}</td>
-    <td class="fs-12">${b.matchName}</td>
-    <td>${b.team}</td>
-    <td>🪙${b.amount}</td>
-    <td>1.95x</td>
-    <td><span class="badge badge-${b.status==='won'?'success':b.status==='lost'?'danger':'warning'}">${b.status}</span></td>
-    <td class="fs-12">${b.date}</td>
-  </tr>`).join('') : '<tr><td colspan="7" class="text-center text-muted">No bets placed</td></tr>';
+  document.getElementById('adminBetsTable').innerHTML = bets.length ? bets.map(b=>`
+    <tr>
+      <td>${b.username}</td>
+      <td class="fs-12">${b.matchName}</td>
+      <td>${b.team}</td>
+      <td>🪙${b.amount}</td>
+      <td>1.95x</td>
+      <td><span class="badge badge-${b.status==='won'?'success':b.status==='lost'?'danger':'warning'}">${b.status}</span></td>
+      <td class="fs-12">${b.date}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="7" class="text-center text-muted">No bets placed</td></tr>';
 }
 
 // =====================================================================
@@ -1102,20 +1194,22 @@ function renderBets() {
 function renderUsers() {
   const q = (document.getElementById('userSearch').value||'').toLowerCase();
   const users = (DB.get('users')||[]).filter(u=>!q||u.username.toLowerCase().includes(q)||u.phone.includes(q));
-  document.getElementById('adminUsersTable').innerHTML = users.length ? users.map(u=>`<tr>
-    <td><strong>${u.username}</strong></td>
-    <td>${u.phone}</td>
-    <td class="text-blue">🪙${u.balance.toFixed(0)}</td>
-    <td>🪙${(u.totalWagered||0).toFixed(0)}</td>
-    <td>₹${(u.totalDeposited||0).toFixed(0)}</td>
-    <td><span class="badge badge-info">${u.vip||'Bronze'}</span></td>
-    <td><span class="badge badge-${u.blocked?'danger':'success'}">${u.blocked?'Blocked':'Active'}</span></td>
-    <td class="fs-12">${u.joinDate||'-'}</td>
-    <td style="white-space:nowrap;">
-      <button class="btn btn-${u.blocked?'success':'danger'} btn-xs" onclick="toggleBlock('${u.id}')">${u.blocked?'Unblock':'Block'}</button>
-      <button class="btn btn-outline btn-xs mt-4" onclick="adjustWallet('${u.id}','${u.username}')">Wallet</button>
-    </td>
-  </tr>`).join('') : '<tr><td colspan="9" class="text-center text-muted">No users found</td></tr>';
+  document.getElementById('adminUsersTable').innerHTML = users.length ? users.map(u=>`
+    <tr>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.phone}</td>
+      <td class="text-blue">🪙${u.balance.toFixed(0)}</td>
+      <td>🪙${(u.totalWagered||0).toFixed(0)}</td>
+      <td>₹${(u.totalDeposited||0).toFixed(0)}</td>
+      <td><span class="badge badge-info">${u.vip||'Bronze'}</span></td>
+      <td><span class="badge badge-${u.blocked?'danger':'success'}">${u.blocked?'Blocked':'Active'}</span></td>
+      <td class="fs-12">${u.joinDate||'-'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-${u.blocked?'success':'danger'} btn-xs" onclick="toggleBlock('${u.id}')">${u.blocked?'Unblock':'Block'}</button>
+        <button class="btn btn-outline btn-xs mt-4" onclick="adjustWallet('${u.id}','${u.username}')">Wallet</button>
+      </td>
+    </tr>
+  `).join('') : '<tr><td colspan="9" class="text-center text-muted">No users found</td></tr>';
 }
 
 function toggleBlock(uid) {
@@ -1171,14 +1265,16 @@ function adminTicketTab(filter, el) {
 
 function renderTickets(filter) {
   const tickets = (DB.get('tickets')||[]).filter(t=>t.status===filter);
-  document.getElementById('adminTicketsTable').innerHTML = tickets.length ? tickets.map(t=>`<tr>
-    <td><strong>${t.username}</strong></td>
-    <td>${t.subject}</td>
-    <td class="fs-12">${t.message.slice(0,60)}...</td>
-    <td class="fs-12">${t.date}</td>
-    <td><span class="badge badge-${t.status==='open'?'warning':'success'}">${t.status}</span></td>
-    <td>${t.status==='open'?`<button class="btn btn-success btn-xs" onclick="resolveTicket('${t.id}')">Resolve</button>`:'✅'}</td>
-  </tr>`).join('') : `<tr><td colspan="6" class="text-center text-muted">No ${filter} tickets</td></tr>`;
+  document.getElementById('adminTicketsTable').innerHTML = tickets.length ? tickets.map(t=>`
+    <tr>
+      <td><strong>${t.username}</strong></td>
+      <td>${t.subject}</td>
+      <td class="fs-12">${t.message.slice(0,60)}...</td>
+      <td class="fs-12">${t.date}</td>
+      <td><span class="badge badge-${t.status==='open'?'warning':'success'}">${t.status}</span></td>
+      <td>${t.status==='open'?`<button class="btn btn-success btn-xs" onclick="resolveTicket('${t.id}')">Resolve</button>`:'✅'}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="6" class="text-center text-muted">No ${filter} tickets</td></tr>';
 }
 
 function resolveTicket(id) {
