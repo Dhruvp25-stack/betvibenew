@@ -292,7 +292,7 @@ input[type=checkbox].toggle:checked::after{left:18px;}
     <div class="card mb-16" style="border-color:rgba(0,200,83,0.35);">
       <div class="card-header" style="display:none;">
         <div class="card-title" style="display:flex;align-items:center;gap:10px;">
-          🔄 Fetch Live Matches from Cricbuzz
+          🔄 Fetch Live Matches from IronMan
           <span id="scraperStatusBadge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(122,139,168,0.15);color:#6a80a0;">Never Run</span>
         </div>
       </div>
@@ -724,7 +724,7 @@ async function checkScraperStatus() {
       badge.style.color = '#ff9800';
       btn.textContent = '⏳ Running...';
       btn.disabled = true;
-      msg.textContent = 'Scraping Cricbuzz... please wait (may take ~60 seconds)';
+      msg.textContent = 'Scraping IronMan Toss Book... please wait (may take ~60 seconds)';
     } else {
       // Done
       clearInterval(scraperPollInterval);
@@ -754,7 +754,7 @@ async function checkScraperStatus() {
           await reloadMatchesFromJSON();
           msg.textContent = '✅ Done! Matches refreshed.';
           renderMatches();
-          toast('✅ Matches updated from Cricbuzz!', 'success');
+          toast('✅ Matches updated from IronMan Toss Book!', 'success');
           logAdminAction('Ran scraper — matches.json updated');
         }, 1500);
       }
@@ -767,24 +767,34 @@ async function checkScraperStatus() {
 async function reloadMatchesFromJSON() {
   try {
     const res = await fetch(apiUrl('/matches.json') + '?t=' + Date.now());
+    if (!res.ok) return [];
     const raw = await res.json();
+    if (!Array.isArray(raw) || raw.length === 0) {
+      // JSON is empty — clear stale matches so admin sees accurate state
+      DB.set('matches', []);
+      return [];
+    }
 
-    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
     const now = Date.now();
-    const nowIST = now + IST_OFFSET;
-    const cutoffIST = nowIST + 48 * 60 * 60 * 1000;
-
     const existing = DB.get('matches') || [];
+
     const converted = raw.map((m, idx) => {
-      const matchStr = m.match || m.match_link_text || '';
-      let team1 = 'Team A', team2 = 'Team B';
-      const vsMatch = matchStr.match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i) ||
-                      (m.match_link_text||'').match(/^([A-Za-z\s]+)\s+vs\s+([A-Za-z\s]+)/i);
-      if (vsMatch) {
-        team1 = vsMatch[1].trim();
-        team2 = vsMatch[2].trim().split(/[\-•]/)[0].trim();
+      // ironmantossbook JSON fields: team1, team2, league, toss_close_time, endtime, toss_rate, timer_left
+      // Also support legacy Cricbuzz fields: match, match_link_text, series, date_ist, time_ist
+      const matchStr = m.match || m.match_link_text || `${m.team1||''} vs ${m.team2||''}`;
+      let team1 = m.team1 || 'Team A';
+      let team2 = m.team2 || 'Team B';
+
+      // If team names not direct fields, try parsing from match string
+      if (!m.team1 && matchStr) {
+        const vsMatch = matchStr.match(/^([A-Za-z0-9\s]+)\s+vs\s+([A-Za-z0-9\s]+)/i);
+        if (vsMatch) {
+          team1 = vsMatch[1].trim();
+          team2 = vsMatch[2].trim().split(/[\-•]/)[0].trim();
+        }
       }
 
+      // Toss result detection
       let tossResult = null;
       if (m.toss && m.toss !== 'Toss not announced') {
         const tw = m.toss.match(/^([^w]+)\s+won the toss/i);
@@ -800,22 +810,23 @@ async function reloadMatchesFromJSON() {
         }
       }
 
+      // Timestamp: ironmantossbook uses endtime (e.g. "21 Apr 2026, 10:54 am")
+      // Also support legacy date_ist / time_ist fields
       let matchTimestamp = now + (idx + 1) * 3 * 60 * 60 * 1000;
-      if (m.date && m.time) {
+      const timeFields = [
+        m.endtime,
+        (m.date_ist && m.time_ist) ? `${m.date_ist.split('-').reverse().join('-')} ${m.time_ist}` : null,
+        (m.date && m.time) ? `${m.date} ${m.time}` : null,
+      ];
+      for (const tf of timeFields) {
+        if (!tf) continue;
         try {
-          const timeStr = m.time.split(',')[0].replace(' LOCAL','').trim();
-          const dateStr = m.date === 'Today' ? new Date().toDateString() : m.date;
-          const parsed = new Date(dateStr + ' ' + timeStr);
-          if (!isNaN(parsed)) matchTimestamp = parsed.getTime();
+          const parsed = new Date(tf);
+          if (!isNaN(parsed)) { matchTimestamp = parsed.getTime(); break; }
         } catch(e) {}
       }
 
-      const matchIST = matchTimestamp + IST_OFFSET;
-      if (matchIST > cutoffIST && !tossResult) return null; // outside 48h window
-
-      const old = existing.find(e => e.id === 'm_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12));
-
-      // Use toss_close_time from JSON if present; fallback to matchTime - 60min
+      // closeTime from toss_close_time (ISO UTC from scraper), fallback matchTime - 60min
       let closeTime = matchTimestamp - 60 * 60 * 1000;
       if (m.toss_close_time) {
         try {
@@ -826,32 +837,38 @@ async function reloadMatchesFromJSON() {
         } catch(e) {}
       }
 
-      // Scraped cards are always live (site only shows active toss timers)
+      // All scraped entries are live (ironmantossbook only shows active toss cards)
       const status = tossResult ? 'completed' : 'live';
       const marketOpen = !tossResult && now < closeTime;
 
-      // If newly settled, auto-settle bets
+      const matchId = 'm_' + idx + '_' + (matchStr).replace(/[^a-z0-9]/gi,'').slice(0,12);
+      const old = existing.find(e => e.id === matchId);
+
+      // Auto-settle bets if toss newly announced
       if (tossResult && old && !old.tossResult) {
-        adminSettleTossQuiet('m_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12), tossResult, team1, team2);
+        adminSettleTossQuiet(matchId, tossResult, team1, team2);
       }
 
       return {
-        id: 'm_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12),
+        id: matchId,
         team1, team2, flag1:'🏏', flag2:'🏏',
-        league: m.series || 'Cricket', series: m.series || '',
-        time: matchTimestamp, closeTime, status, tossResult, toss: m.toss || '',
+        league: m.league || m.series || 'Cricket', series: m.series || m.league || '',
+        time: matchTimestamp, closeTime, status, tossResult,
+        toss: m.toss || '', toss_rate: m.toss_rate || '',
         totalBets: old ? (old.totalBets || 0) : 0,
         marketOpen,
         venue: m.venue || m.stadium || '', stadium: m.stadium || '',
-        city: m.city || '', capacity: m.capacity || '',
-        ends: m.ends || '', umpires: m.umpires || '',
-        referee: m.referee || '', date: m.date || '', matchTime: m.time || ''
+        city: m.city || '', date: m.date || m.date_ist || '', matchTime: m.time || m.time_ist || ''
       };
     }).filter(Boolean);
 
+    // ⚡ Replace all matches with fresh data — no stale merging
     DB.set('matches', converted);
     return converted;
-  } catch(e) { return []; }
+  } catch(e) {
+    console.error('reloadMatchesFromJSON error:', e);
+    return [];
+  }
 }
 
 function adminSettleTossQuiet(matchId, winner, team1, team2) {
@@ -877,14 +894,16 @@ function adminSettleTossQuiet(matchId, winner, team1, team2) {
   }
 }
 
-// Auto-refresh matches from JSON every 30 seconds in admin
+// Auto-refresh matches from JSON every 20 seconds in admin (matches index.html timing)
 setInterval(async () => {
   const data = await reloadMatchesFromJSON();
-  if (data && data.length) renderMatches();
-}, 30000);
+  if (data) renderMatches();
+}, 20000);
 
-// On load, also check scraper status + init Socket.IO
+// On load, clear stale matches, check scraper status + init Socket.IO
 window.addEventListener('load', () => {
+  // ⚡ Always wipe old localStorage matches so stale data never shows
+  DB.set('matches', []);
   checkScraperStatus();
   reloadMatchesFromJSON().then(() => renderMatches());
   initAdminSocketIO();
@@ -1003,7 +1022,7 @@ function renderMatches() {
         <button class="btn btn-danger btn-xs mt-4" onclick="deleteMatch('${m.id}')">Del</button>
       </td>
     </tr>`;
-  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No matches. Run Scraper to fetch from Cricbuzz.</td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No live matches. Click "Run Scraper Now" to fetch from IronMan Toss Book.</td></tr>';
 }
 
 function adminSettleToss(matchId, winner) {
