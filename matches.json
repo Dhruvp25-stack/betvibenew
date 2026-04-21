@@ -1,27 +1,7 @@
 [
     {
-        "timer_left": "00H 26M 26S",
-        "toss_close_time": "2026-04-21T10:25:00+00:00",
-        "league": "UAE TOUR OF NEPAL",
-        "sport": "CRICKET",
-        "team1": "NEPAL",
-        "team2": "UAE",
-        "endtime": "10:25 AM",
-        "toss_rate": "95"
-    },
-    {
-        "timer_left": "02H 01M 26S",
-        "toss_close_time": "2026-04-21T12:00:00+00:00",
-        "league": "BHUKTAIR LEAGUE",
-        "sport": "CRICKET",
-        "team1": "CSS GROUP",
-        "team2": "SHARJAH CA",
-        "endtime": "12:00 PM",
-        "toss_rate": "95"
-    },
-    {
-        "timer_left": "02H 41M 26S",
-        "toss_close_time": "2026-04-21T12:40:00+00:00",
+        "timer_left": "01H 27M 52S",
+        "toss_close_time": "2026-04-21T12:39:59+00:00",
         "league": "ICCA ARABIAN",
         "sport": "CRICKET",
         "team1": "BAB AL WASAL",
@@ -30,8 +10,8 @@
         "toss_rate": "95"
     },
     {
-        "timer_left": "03H 22M 26S",
-        "toss_close_time": "2026-04-21T13:21:00+00:00",
+        "timer_left": "02H 08M 52S",
+        "toss_close_time": "2026-04-21T13:20:59+00:00",
         "league": "PSL 2026",
         "sport": "CRICKET",
         "team1": "RAWALPINDIZ",
@@ -40,8 +20,8 @@
         "toss_rate": "95"
     },
     {
-        "timer_left": "03H 22M 26S",
-        "toss_close_time": "2026-04-21T13:21:00+00:00",
+        "timer_left": "02H 08M 52S",
+        "toss_close_time": "2026-04-21T13:20:59+00:00",
         "league": "IPL 2026",
         "sport": "CRICKET",
         "team1": "SUNRISERS HYDERABAD",
@@ -50,8 +30,8 @@
         "toss_rate": "95"
     },
     {
-        "timer_left": "04H 56M 26S",
-        "toss_close_time": "2026-04-21T14:55:00+00:00",
+        "timer_left": "03H 42M 52S",
+        "toss_close_time": "2026-04-21T14:54:59+00:00",
         "league": "ICCA ARABIAN",
         "sport": "CRICKET",
         "team1": "DUBAI DAREDEVIL",
@@ -60,8 +40,8 @@
         "toss_rate": "95"
     },
     {
-        "timer_left": "07H 11M 26S",
-        "toss_close_time": "2026-04-21T17:10:00+00:00",
+        "timer_left": "05H 57M 52S",
+        "toss_close_time": "2026-04-21T17:09:59+00:00",
         "league": "ICCA ARABIAN",
         "sport": "CRICKET",
         "team1": "DUBAI DAREDEVIL",
