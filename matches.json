@@ -1,0 +1,92 @@
+[
+    {
+        "timer_left": "03H 29M 26S",
+        "toss_close_time": "2026-04-21T09:30:00+00:00",
+        "league": "SWAMI INTER CHAMPIONSHIP",
+        "sport": "CRICKET",
+        "team1": "SHIVAJI COLLEGE",
+        "team2": "SRI GURU NANAK COLLEGE",
+        "endtime": "09:30 AM",
+        "toss_rate": "95"
+    },
+    {
+        "timer_left": "03H 59M 26S",
+        "toss_close_time": "2026-04-21T10:00:00+00:00",
+        "league": "ICC W T20 TROPHY",
+        "sport": "CRICKET",
+        "team1": "VANUATU W",
+        "team2": "ITALY W",
+        "endtime": "10:00 AM",
+        "toss_rate": "95"
+    },
+    {
+        "timer_left": "04H 24M 26S",
+        "toss_close_time": "2026-04-21T10:25:00+00:00",
+        "league": "UAE TOUR OF NEPAL",
+        "sport": "CRICKET",
+        "team1": "NEPAL",
+        "team2": "UAE",
+        "endtime": "10:25 AM",
+        "toss_rate": "95"
+    },
+    {
+        "timer_left": "05H 59M 26S",
+        "toss_close_time": "2026-04-21T12:00:00+00:00",
+        "league": "BHUKTAIR LEAGUE",
+        "sport": "CRICKET",
+        "team1": "CSS GROUP",
+        "team2": "SHARJAH CA",
+        "endtime": "12:00 PM",
+        "toss_rate": "95"
+    },
+    {
+        "timer_left": "06H 39M 26S",
+        "toss_close_time": "2026-04-21T12:40:00+00:00",
+        "league": "ICCA ARABIAN",
+        "sport": "CRICKET",
+        "team1": "BAB AL WASAL",
+        "team2": "DUBAI ROYALS",
+        "endtime": "12:40 PM",
+        "toss_rate": "95"
+    },
+    {
+        "timer_left": "07H 20M 26S",
+        "toss_close_time": "2026-04-21T13:21:00+00:00",
+        "league": "PSL 2026",
+        "sport": "CRICKET",
+        "team1": "RAWALPINDIZ",
+        "team2": "MULTAN SULTANS",
+        "endtime": "01:21 PM",
+        "toss_rate": "95"
+    },
+    {
+        "timer_left": "07H 20M 26S",
+        "toss_close_time": "2026-04-21T13:21:00+00:00",
+        "league": "IPL 2026",
+        "sport": "CRICKET",
+        "team1": "SUNRISERS HYDERABAD",
+        "team2": "DELHI CAPITALS",
+        "endtime": "01:21 PM",
+        "toss_rate": "95"
+    },
+    {
+        "timer_left": "08H 54M 26S",
+        "toss_close_time": "2026-04-21T14:55:00+00:00",
+        "league": "ICCA ARABIAN",
+        "sport": "CRICKET",
+        "team1": "DUBAI DAREDEVIL",
+        "team2": "Z SPORTS",
+        "endtime": "02:55 PM",
+        "toss_rate": "95"
+    },
+    {
+        "timer_left": "11H 09M 26S",
+        "toss_close_time": "2026-04-21T17:10:00+00:00",
+        "league": "ICCA ARABIAN",
+        "sport": "CRICKET",
+        "team1": "DUBAI DAREDEVIL",
+        "team2": "VTAC VOLTS",
+        "endtime": "05:10 PM",
+        "toss_rate": "95"
+    }
+]
