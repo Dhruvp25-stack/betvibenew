@@ -4,6 +4,4 @@ flask-socketio
 eventlet
 gunicorn
 requests
-beautifulsoup4
-lxml
-pandas
+playwright
