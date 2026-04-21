@@ -288,7 +288,10 @@ input[type=checkbox].toggle:checked::after{left:18px;}
   <div class="panel" id="panel-matches">
     <div class="flex-between mb-16">
       <div class="page-title" style="margin:0;">🏏 Cricket Matches</div>
-      <button class="btn btn-primary btn-sm" onclick="addDemoMatch()">+ Add Demo Match</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="addDemoMatch()">+ Add Demo Match</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllMatches()">🗑️ Clear All Matches</button>
+      </div>
     </div>
 
     <!-- RUN SCRAPER CARD -->
@@ -1171,6 +1174,14 @@ function deleteMatch(matchId) {
   DB.set('matches', (DB.get('matches')||[]).filter(m=>m.id!==matchId));
   logAdminAction(`Deleted match ${matchId}`);
   toast('Match deleted', 'danger');
+  renderMatches();
+}
+
+function clearAllMatches() {
+  if (!confirm('⚠️ Are you sure you want to DELETE ALL matches? This cannot be undone.')) return;
+  DB.set('matches', []);
+  logAdminAction('Cleared ALL matches');
+  toast('✅ All matches cleared!', 'danger');
   renderMatches();
 }
 
