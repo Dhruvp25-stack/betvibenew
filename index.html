@@ -1030,22 +1030,80 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 
 </div><!-- end view-app -->
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
 <script>
 // =====================================================================
-// DATABASE (localStorage) with Cross-Tab Sync
+// DATABASE — Firebase Realtime DB + localStorage fallback
 // =====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBydZuUkr8S7rxGzXIKb8RjuhLd5MBKPIQ",
+  authDomain: "tossbet-17398.firebaseapp.com",
+  databaseURL: "https://tossbet-17398-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tossbet-17398",
+  storageBucket: "tossbet-17398.firebasestorage.app",
+  messagingSenderId: "402991385038",
+  appId: "1:402991385038:web:48cda1638c577064d7439f",
+  measurementId: "G-ZX0LRYQZ9D"
+};
+
+let firebaseApp, firebaseDB, fbReady = false;
+try {
+  firebaseApp = firebase.initializeApp(firebaseConfig);
+  firebaseDB = firebase.database();
+  fbReady = true;
+} catch(e) { console.warn('Firebase init failed, using localStorage only', e); }
+
 const DB = {
-  get: k => { try { return JSON.parse(localStorage.getItem('bv_'+k)); } catch(e) { return null; } },
-  set: (k,v) => {
-    localStorage.setItem('bv_'+k, JSON.stringify(v));
+  get: k => {
+    try { const v = localStorage.getItem('bv_'+k); return v ? JSON.parse(v) : null; }
+    catch(e) { return null; }
+  },
+  set: (k, v) => {
+    try {
+      localStorage.setItem('bv_'+k, JSON.stringify(v));
+      // Push to Firebase so admin sees it in real-time
+      if (fbReady) firebaseDB.ref('betvibe/'+k).set(v).catch(()=>{});
+    } catch(e) {}
+    // Also fire storage event for same-tab listeners
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'bv_'+k,
       newValue: JSON.stringify(v),
       oldValue: localStorage.getItem('bv_'+k)
     }));
   },
-  del: k => localStorage.removeItem('bv_'+k)
+  del: k => {
+    localStorage.removeItem('bv_'+k);
+    if (fbReady) firebaseDB.ref('betvibe/'+k).remove().catch(()=>{});
+  },
+  on: (k, cb) => {
+    if (!fbReady) return;
+    firebaseDB.ref('betvibe/'+k).on('value', snap => {
+      const val = snap.val();
+      if (val !== null) {
+        try { localStorage.setItem('bv_'+k, JSON.stringify(val)); } catch(e){}
+        cb(val);
+      }
+    });
+  }
 };
+
+// Pull shared data from Firebase into localStorage on load
+function syncFromFirebase() {
+  if (!fbReady) return;
+  const shared = ['bankAccounts','promoCodes','betLimits','depositCoupons',
+                   'maintenance','supportLinks','matches','notifications'];
+  shared.forEach(k => {
+    firebaseDB.ref('betvibe/'+k).once('value').then(snap => {
+      const val = snap.val();
+      if (val !== null) {
+        try { localStorage.setItem('bv_'+k, JSON.stringify(val)); } catch(e){}
+      }
+    }).catch(()=>{});
+  });
+}
 
 window.addEventListener('storage', function(e) {
   if (e.key && e.key.startsWith('bv_')) {
@@ -1099,27 +1157,73 @@ function initDB() {
   if (!DB.get('depositCoupons')) DB.set('depositCoupons', [{ amount:1000, bonus:100 },{ amount:5000, bonus:600 },{ amount:10000, bonus:1500 }]);
   if (!DB.get('maintenance')) DB.set('maintenance', false);
   if (!DB.get('qrData')) DB.set('qrData', {});
-  getDefaultMatches().then(data => {
-    if (data && data.length) {
+
+  // Pull shared config & matches from Firebase first, then load CDN matches
+  syncFromFirebase();
+  setTimeout(() => {
+    getDefaultMatches().then(data => {
+      if (data && data.length) {
+        const existing = DB.get('matches') || [];
+        data.forEach(m => {
+          if (m.tossResult) {
+            const old = existing.find(e => e.id === m.id);
+            if (old && !old.tossResult) settleToss(m.id, m.tossResult);
+          }
+        });
+        DB.set('matches', data);
+      }
+      if (typeof renderMatches === 'function') renderMatches();
+    });
+  }, 500);
+
+  // Listen for admin-settled toss results pushed via Firebase
+  if (fbReady) {
+    firebaseDB.ref('betvibe/matches').on('value', snap => {
+      const val = snap.val();
+      if (!Array.isArray(val)) return;
       const existing = DB.get('matches') || [];
-      data.forEach(m => {
-        if (m.tossResult) {
+      val.forEach(m => {
+        if (m && m.tossResult) {
           const old = existing.find(e => e.id === m.id);
           if (old && !old.tossResult) settleToss(m.id, m.tossResult);
         }
       });
-      DB.set('matches', data);
-    }
-    if (typeof renderMatches === 'function') renderMatches();
-  });
+      try { localStorage.setItem('bv_matches', JSON.stringify(val)); } catch(e) {}
+      if (typeof renderMatches === 'function') renderMatches();
+    });
+
+    // Listen for admin notifications pushed to current user
+    firebaseDB.ref('betvibe/notifications').on('value', snap => {
+      const val = snap.val();
+      if (Array.isArray(val)) {
+        try { localStorage.setItem('bv_notifications', JSON.stringify(val)); } catch(e) {}
+        if (typeof renderNotifications === 'function') renderNotifications();
+        if (typeof updateNavUser === 'function') updateNavUser();
+      }
+    });
+
+    // Listen for admin deposit/withdrawal approvals
+    ['deposits','withdrawals','users'].forEach(k => {
+      firebaseDB.ref('betvibe/'+k).on('value', snap => {
+        const val = snap.val();
+        if (val !== null) {
+          try { localStorage.setItem('bv_'+k, JSON.stringify(val)); } catch(e) {}
+          if (typeof refreshCurrentView === 'function') refreshCurrentView();
+          if (typeof updateNavUser === 'function') updateNavUser();
+        }
+      });
+    });
+  }
 }
 
 // =====================================================================
 // BACKEND CONFIG
 // =====================================================================
 const BACKEND_URL = 'https://web-production-e046e.up.railway.app';
+// Matches are ONLY loaded from matches_clean.json on the CDN
+const MATCHES_CDN = 'https://cdn.jsdelivr.net/gh/Dhruvp25-stack/betvibenew@main/matches_clean.json';
 function apiUrl(path) {
-  return BACKEND_URL ? BACKEND_URL.replace(/\/$/, '') + path : path;
+  return BACKEND_URL.replace(/\/$/, '') + path;
 }
 
 // =====================================================================
@@ -2137,7 +2241,7 @@ function settleToss(matchId, winner) {
 
 async function getDefaultMatches() {
   try {
-    const res=await fetch(apiUrl('/matches.json')+'?t='+Date.now());
+    const res=await fetch(MATCHES_CDN+'?t='+Date.now());
     const contentType=res.headers.get('content-type')||'';
     if (!res.ok||!contentType.includes('json')) return [];
     const data=await res.json();
@@ -2179,10 +2283,10 @@ async function getDefaultMatches() {
         date:raw.date_ist||'',matchTime:raw.time_ist||''
       };
     }).filter(m => m.status === 'live');
-  } catch(err) { console.error('Failed to load matches.json:',err); return []; }
+  } catch(err) { console.error('Failed to load matches_clean.json:',err); return []; }
 }
 
-// Auto-refresh from server every 20s for real-time toss and close-time enforcement
+// Auto-refresh from CDN every 30s — keeps match statuses current
 setInterval(async()=>{
   const data=await getDefaultMatches();
   if (data&&data.length){
@@ -2192,14 +2296,12 @@ setInterval(async()=>{
       if(old){fresh.totalBets=old.totalBets||0;if(fresh.tossResult&&!old.tossResult)settleToss(fresh.id,fresh.tossResult);}
       return fresh;
     });
-    // Only persist live matches
-    DB.set('matches', merged.filter(m => m.status === 'live'));
+    DB.set('matches', merged);
     if(document.getElementById('section-home').classList.contains('active')) renderMatches();
   } else {
-    // Even if no data, re-render to update market-close state in real time
     if(document.getElementById('section-home').classList.contains('active')) renderMatches();
   }
-},20000);
+},30000);
 </script>
 </body>
 </html>
