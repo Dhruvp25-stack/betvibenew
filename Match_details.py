@@ -1,77 +1,99 @@
 import json
-import re
-from datetime import datetime, timezone, timedelta
+import time
+import hashlib
+import requests
 from playwright.sync_api import sync_playwright
 
 URL = "https://ironmantossbook.com"
+API = "https://ironmantossbook.com/api/client/bets"
 
-def is_timer(text):
-    return re.match(r'^\d{2}H \d{2}M \d{2}S$', text.strip()) is not None
 
-def timer_to_seconds(timer_str):
-    """Convert '01H 45M 30S' to total seconds."""
-    m = re.match(r'^(\d{2})H (\d{2})M (\d{2})S$', timer_str.strip())
-    if not m:
-        return 0
-    return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
-
-def scrape():
-    results = []
+def get_token():
+    token = None
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
-        page.goto(URL, wait_until="networkidle")
+        def capture(response):
+            nonlocal token
+            if "/api/auth/login" in response.url:
+                try:
+                    token = response.json()["data"]["token"]
+                except:
+                    pass
+
+        page.on("response", capture)
+
+        page.goto(URL)
         page.click("text=Sign in with Demo ID")
-        page.wait_for_timeout(6000)
-
-        # Capture scrape time once for consistent close-time calculation
-        scrape_time = datetime.now(timezone.utc)
-
-        text = page.locator("body").inner_text()
-        blocks = text.split("BET ON TOSS")
-
-        for block in blocks:
-            lines = [x.strip() for x in block.split("\n") if x.strip()]
-
-            if len(lines) < 10:
-                continue
-
-            # first line must be timer
-            if not is_timer(lines[0]):
-                continue
-
-            # must contain cricket card structure
-            if "CRICKET" not in lines:
-                continue
-
-            try:
-                timer_str = lines[0]
-                secs_left = timer_to_seconds(timer_str)
-
-                # toss_close_time = moment when market shuts = scrape_time + timer_left
-                close_dt = scrape_time + timedelta(seconds=secs_left)
-                # ISO 8601 string (UTC), frontend will parse this correctly
-                toss_close_time = close_dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-
-                results.append({
-                    "timer_left": timer_str,
-                    "toss_close_time": toss_close_time,
-                    "league": lines[1],
-                    "sport": lines[2],
-                    "team1": lines[3],
-                    "team2": lines[5],
-                    "endtime": lines[7],
-                    "toss_rate": lines[9]
-                })
-            except:
-                pass
-
-        with open("matches_clean.json", "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=4)
-
-        print(json.dumps(results, indent=4))
+        page.wait_for_timeout(5000)
         browser.close()
 
-scrape()
+    return token
+
+
+def fetch_matches(token):
+    headers = {"Authorization": f"Bearer {token}"}
+    r = requests.get(API, headers=headers, timeout=10)
+    data = r.json()
+
+    if not data.get("success"):
+        return []
+
+    history = data["data"]["history"]
+
+    # Keep only exact live match rows
+    result = []
+    for m in history:
+        result.append({
+            "id": m["id"],
+            "leagueName": m["leagueName"],
+            "sportType": m["sportType"],
+            "teamAName": m["teamAName"],
+            "teamBName": m["teamBName"],
+            "betStartTime": m["betStartTime"],
+            "betEndTime": m["betEndTime"],
+            "tossRate": m["tossRate"],
+            "imageUrl": m["imageUrl"],
+            "hasBet": m["hasBet"],
+            "betTeamName": m["betTeamName"],
+            "betAmount": m["betAmount"]
+        })
+
+    return result
+
+
+def state_hash(data):
+    raw = json.dumps(data, sort_keys=True, separators=(",", ":"))
+    return hashlib.md5(raw.encode()).hexdigest()
+
+
+def main():
+    token = get_token()
+    if not token:
+        print("Login failed")
+        return
+
+    last_hash = None
+
+    while True:
+        try:
+            matches = fetch_matches(token)
+            h = state_hash(matches)
+
+            if h != last_hash:
+                with open("matches_live.json", "w", encoding="utf-8") as f:
+                    json.dump(matches, f, indent=4)
+
+                print(f"Updated JSON with {len(matches)} exact Ironman matches")
+                last_hash = h
+
+            time.sleep(1)
+
+        except Exception as e:
+            print("Error:", e)
+            time.sleep(3)
+
+
+main()
