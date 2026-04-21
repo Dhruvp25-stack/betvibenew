@@ -302,7 +302,7 @@ input[type=checkbox].toggle:checked::after{left:18px;}
           <span id="scraperStatusBadge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(122,139,168,0.15);color:#6a80a0;">Never Run</span>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Runs <strong style="color:var(--text);">Match_details.py</strong> → scrapes ironmantossbook.com → saves <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;">matches.json</code>. Only <strong style="color:var(--text);">live matches</strong> with active toss timers are shown to users. Each match includes a <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;">toss_close_time</code> computed from the site's countdown.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Fetches matches directly from <strong style="color:var(--text);">matches_clean.json</strong> on GitHub CDN. Update that file on GitHub first, then click the button to reload matches here instantly.</p>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <button class="btn btn-success" id="runScraperBtn" onclick="runScraper()">▶ Run Scraper Now</button>
         <button class="btn btn-outline btn-sm" onclick="checkScraperStatus()">↻ Check Status</button>
@@ -788,94 +788,49 @@ async function runScraper() {
   const btn = document.getElementById('runScraperBtn');
   const msg = document.getElementById('scraperMsg');
   const badge = document.getElementById('scraperStatusBadge');
+
   btn.disabled = true;
-  btn.textContent = '⏳ Starting...';
-  msg.textContent = 'Sending request to server...';
+  btn.textContent = '⏳ Fetching...';
+  msg.textContent = 'Loading matches from matches_clean.json...';
+  badge.textContent = '🔄 Loading';
+  badge.style.background = 'rgba(255,152,0,0.15)';
+  badge.style.color = '#ff9800';
 
   try {
-    const res = await fetch(apiUrl('/api/run-scraper'), {
-      method: 'POST',
-      headers: BACKEND_URL ? { 'X-Admin-Key': ADMIN_KEY } : {}
-    });
-    const json = await res.json();
-    if (json.ok) {
-      msg.textContent = json.msg;
-      badge.textContent = '🔄 Running';
-      badge.style.background = 'rgba(255,152,0,0.15)';
-      badge.style.color = '#ff9800';
-      btn.textContent = '⏳ Running...';
-      // Poll every 3 seconds
-      scraperPollInterval = setInterval(checkScraperStatus, 3000);
-    } else {
-      msg.textContent = '⚠️ ' + json.msg;
-      btn.disabled = false;
-      btn.textContent = '▶ Run Scraper Now';
-    }
-  } catch (e) {
-    msg.textContent = '';
+    const data = await reloadMatchesFromCDN();
     btn.disabled = false;
     btn.textContent = '▶ Run Scraper Now';
+
+    if (data && data.length > 0) {
+      badge.textContent = '✅ Done';
+      badge.style.background = 'rgba(0,200,83,0.15)';
+      badge.style.color = '#00c853';
+      msg.textContent = `✅ Loaded ${data.length} match${data.length > 1 ? 'es' : ''} from matches_clean.json`;
+      document.getElementById('scraperLastRun').textContent = new Date().toLocaleString();
+      renderMatches();
+      toast(`✅ ${data.length} matches loaded!`, 'success');
+      logAdminAction(`Fetched ${data.length} matches from matches_clean.json`);
+    } else {
+      badge.textContent = '⚠️ Empty';
+      badge.style.background = 'rgba(255,152,0,0.15)';
+      badge.style.color = '#ff9800';
+      msg.textContent = '⚠️ matches_clean.json is empty or unreachable. Update it on GitHub first.';
+      toast('matches_clean.json returned no matches', 'warning');
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '▶ Run Scraper Now';
+    badge.textContent = '❌ Error';
+    badge.style.background = 'rgba(244,67,54,0.15)';
+    badge.style.color = '#f44336';
+    msg.textContent = '❌ Failed to fetch matches_clean.json — check your internet or GitHub file.';
+    toast('Failed to load matches', 'danger');
   }
 }
 
+// checkScraperStatus — not used anymore (scraper replaced by CDN fetch)
 async function checkScraperStatus() {
-  try {
-    const res = await fetch(apiUrl('/api/scraper-status'), {
-      headers: BACKEND_URL ? { 'X-Admin-Key': ADMIN_KEY } : {}
-    });
-    const json = await res.json();
-    const btn = document.getElementById('runScraperBtn');
-    const msg = document.getElementById('scraperMsg');
-    const badge = document.getElementById('scraperStatusBadge');
-    const logEl = document.getElementById('scraperLog');
-    const lastRun = document.getElementById('scraperLastRun');
-
-    if (json.last_run) lastRun.textContent = json.last_run;
-
-    if (json.running) {
-      badge.textContent = '🔄 Running';
-      badge.style.background = 'rgba(255,152,0,0.15)';
-      badge.style.color = '#ff9800';
-      btn.textContent = '⏳ Running...';
-      btn.disabled = true;
-      msg.textContent = 'Scraping IronMan Toss Book... please wait (may take ~60 seconds)';
-    } else {
-      // Done
-      clearInterval(scraperPollInterval);
-      scraperPollInterval = null;
-      btn.disabled = false;
-      btn.textContent = '▶ Run Scraper Now';
-
-      if (json.error) {
-        badge.textContent = '❌ Error';
-        badge.style.background = 'rgba(244,67,54,0.15)';
-        badge.style.color = '#f44336';
-        msg.textContent = 'Scraper finished with errors.';
-        logEl.textContent = json.error;
-        logEl.style.display = 'block';
-        logEl.style.color = '#f44336';
-      } else if (json.last_run) {
-        badge.textContent = '✅ Done';
-        badge.style.background = 'rgba(0,200,83,0.15)';
-        badge.style.color = '#00c853';
-        msg.textContent = '✅ Matches fetched! Reloading...';
-        if (json.last_result) {
-          logEl.textContent = json.last_result;
-          logEl.style.display = 'block';
-          logEl.style.color = '#4caf50';
-        }
-        setTimeout(async () => {
-          await reloadMatchesFromJSON();
-          msg.textContent = '✅ Done! Matches refreshed.';
-          renderMatches();
-          toast('✅ Matches updated from IronMan Toss Book!', 'success');
-          logAdminAction('Ran scraper — matches.json updated');
-        }, 1500);
-      }
-    }
-  } catch(e) {
-    // server unreachable
-  }
+  // No-op: scraper replaced by direct CDN fetch from matches_clean.json
 }
 
 // ── Only loads from matches_clean.json on CDN (3 matches source) ─────
