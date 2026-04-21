@@ -682,10 +682,8 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 <div class="left-sidebar">
   <div class="sidebar-section">
     <div class="sidebar-hdr">Cricket</div>
-    <button class="sidebar-link active" onclick="showSection('home')"><span>🏏</span><span>All Matches</span><span class="live-count" id="sidebarLiveCount">0</span></button>
-    <button class="sidebar-link" onclick="filterFromSidebar('live')"><span>🔴</span><span>Live</span></button>
-    <button class="sidebar-link" onclick="filterFromSidebar('upcoming')"><span>🕐</span><span>Upcoming</span></button>
-    <button class="sidebar-link" onclick="filterFromSidebar('completed')"><span>✅</span><span>Completed</span></button>
+    <button class="sidebar-link active" onclick="showSection('home')"><span>🏏</span><span>Live Matches</span><span class="live-count" id="sidebarLiveCount">0</span></button>
+    <button class="sidebar-link" onclick="filterFromSidebar('live')"><span>🔴</span><span>Live Now</span></button>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-hdr">Account</div>
@@ -711,24 +709,20 @@ tr:hover td{background:rgba(255,255,255,0.02);}
   <div class="promo-banner">
     <div class="promo-text">
       <h2>CRICKET TOSS BETTING</h2>
-      <p>Predict the toss winner & win big. Auto-settlement every 20 seconds.</p>
+      <p>Predict the toss winner & win big. Toss closes at the saved deadline — real-time enforced.</p>
       <div class="promo-chips">
-        <div class="promo-chip"><strong id="heroLiveCount">0</strong>Live</div>
-        <div class="promo-chip"><strong id="heroUpcomingCount">0</strong>Upcoming</div>
+        <div class="promo-chip"><strong id="heroLiveCount">0</strong>Live Now</div>
         <div class="promo-chip"><strong>1.95x</strong>Fixed Odds</div>
+        <div class="promo-chip"><span class="live-dot"></span>Real-Time Toss</div>
       </div>
     </div>
   </div>
 
   <!-- STATS -->
-  <div class="stats-row">
+  <div class="stats-row" style="grid-template-columns:1fr 1fr;">
     <div class="stat-box">
       <div class="stat-icon blue">🔴</div>
       <div><div class="stat-val" id="statLive">0</div><div class="stat-lbl">Live Now</div></div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-icon gold">⏳</div>
-      <div><div class="stat-val" id="statUpcoming">0</div><div class="stat-lbl">Upcoming</div></div>
     </div>
     <div class="stat-box">
       <div class="stat-icon green">🔄</div>
@@ -738,10 +732,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 
   <!-- FILTER BAR -->
   <div class="filter-bar">
-    <button class="filter-btn active" onclick="filterMatches('all',this)">All Matches</button>
-    <button class="filter-btn" onclick="filterMatches('live',this)"><span class="dot dot-live"></span>Live</button>
-    <button class="filter-btn" onclick="filterMatches('upcoming',this)"><span class="dot dot-up"></span>Upcoming</button>
-    <button class="filter-btn" onclick="filterMatches('completed',this)"><span class="dot dot-done"></span>Completed</button>
+    <button class="filter-btn active" onclick="filterMatches('all',this)">🔴 All Live Matches</button>
   </div>
 
   <!-- MATCHES LIST -->
@@ -1520,9 +1511,12 @@ function startSessionTimer() {
 function isTossMarketOpen(match) {
   try {
     const now = Date.now();
+    // Use closeTime stored from JSON (toss_close_time field), fallback to matchTime - 60min
     const matchTime = typeof match.time === 'number' ? match.time : 0;
-    if (!matchTime || isNaN(matchTime)) return false;
-    const closeTime = matchTime - (60*60*1000);
+    const closeTime = typeof match.closeTime === 'number' && match.closeTime > 0
+      ? match.closeTime
+      : (matchTime > 0 ? matchTime - (60*60*1000) : 0);
+    if (!closeTime) return false;
     if (match.tossResult) return false;
     if (match.status === 'live') return false;
     if (match.status === 'completed') return false;
@@ -1560,9 +1554,14 @@ function autoUpdateMatchStatuses() {
   let changed = false;
   matches.forEach(m => {
     const matchTime = typeof m.time === 'number' ? m.time : 0;
-    const closeTime = matchTime - (60*60*1000);
+    // Use closeTime from JSON (toss_close_time), fallback to matchTime - 60min
+    const closeTime = typeof m.closeTime === 'number' && m.closeTime > 0
+      ? m.closeTime
+      : (matchTime > 0 ? matchTime - (60*60*1000) : 0);
     if (m.status==='upcoming' && matchTime>0 && now>=matchTime) { m.status='live'; m.marketOpen=false; changed=true; }
-    if (m.status==='upcoming' && matchTime>0 && now>=closeTime) { m.marketOpen=false; changed=true; }
+    if (m.status==='upcoming' && closeTime>0 && now>=closeTime) { m.marketOpen=false; changed=true; }
+    // Re-check live market open based on close time
+    if (m.status==='live' && closeTime>0 && now>=closeTime) { m.marketOpen=false; changed=true; }
   });
   if (changed) DB.set('matches', matches);
 }
@@ -1613,28 +1612,20 @@ function showMatchDetails(matchId) {
 
 function renderMatches() {
   let matches = DB.get('matches') || [];
-  const now = Date.now();
-  const IST_OFFSET = 5.5*60*60*1000;
-  const nowIST = now + IST_OFFSET;
-  const cutoffIST = nowIST + 48*60*60*1000;
-  matches = matches.filter(m => {
-    if (m.status==='live'||m.status==='completed') return true;
-    const matchIST = (m.time||0)+IST_OFFSET;
-    return matchIST<=cutoffIST && matchIST>=(nowIST-6*60*60*1000);
-  });
+  // Only show live matches
+  matches = matches.filter(m => m.status === 'live');
 
-  const liveCount = matches.filter(m => m.status==='live').length;
-  const upcomingCount = matches.filter(m => m.status==='upcoming').length;
+  const liveCount = matches.length;
   document.getElementById('heroLiveCount').textContent = liveCount;
-  document.getElementById('heroUpcomingCount').textContent = upcomingCount;
   document.getElementById('statLive').textContent = liveCount;
-  document.getElementById('statUpcoming').textContent = upcomingCount;
   const sidebarLive = document.getElementById('sidebarLiveCount');
   if (sidebarLive) sidebarLive.textContent = liveCount;
 
-  let filtered = matchFilter==='all' ? matches : matches.filter(m => m.status===matchFilter);
+  // matchFilter is either 'all' or 'live' — both show live in this view
+  let filtered = matches;
   const limits = DB.get('betLimits') || { min:100, max:10000 };
   const grid = document.getElementById('matchesGrid');
+  const now = Date.now();
 
   grid.innerHTML = filtered.map(m => {
     const canBet = isTossMarketOpen(m);
@@ -1651,11 +1642,24 @@ function renderMatches() {
     const badgeCls = m.status==='live'?'badge-live':m.status==='upcoming'?'badge-upcoming':'badge-completed';
     const hasDetails = m.venue||m.stadium||m.city;
 
+    // Toss close time display — use closeTime from JSON
+    const closeTime = typeof m.closeTime === 'number' && m.closeTime > 0
+      ? m.closeTime
+      : (matchTime > 0 ? matchTime - (60*60*1000) : 0);
+    const minsToClose = closeTime > 0 ? Math.max(0, Math.floor((closeTime - now)/60000)) : 0;
+    const closeTimeStr = closeTime > 0
+      ? new Date(closeTime).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})
+      : '';
+
     let lockedMsg = '🔒 Betting Closed';
     if (m.status==='completed') lockedMsg = '✅ Match Settled';
-    else if (m.status==='live') lockedMsg = '⏳ Awaiting Toss Settlement';
-    else if (m.tossResult) lockedMsg = '✅ Toss Declared';
-    else if (!canBet&&m.status==='upcoming') lockedMsg = '🔒 Market Closed (60 min before)';
+    else if (m.status==='live' && !canBet) lockedMsg = '⏳ Toss Market Closed';
+    else if (m.tossResult) lockedMsg = '✅ Toss Declared: '+m.tossResult;
+    else if (!canBet&&m.status==='upcoming') lockedMsg = `🔒 Market Closed at ${closeTimeStr}`;
+
+    const closeSoonWarning = canBet && minsToClose <= 10 && minsToClose > 0
+      ? `<div style="font-size:11px;color:var(--orange);text-align:center;margin-top:5px;">⚠️ Market closes in ${minsToClose} min</div>`
+      : (canBet && closeTimeStr ? `<div style="font-size:11px;color:var(--dim);text-align:center;margin-top:5px;">🔒 Closes at ${closeTimeStr}</div>` : '');
 
     return `<div class="match-card">
       <div class="match-header">
@@ -1683,7 +1687,8 @@ function renderMatches() {
               <div class="bet-odd">1.95</div>
             </div>
           </div>
-          <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:6px;">Min: 🪙${limits.min} | Max: 🪙${limits.max}</div>`
+          ${closeSoonWarning}
+          <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:4px;">Min: 🪙${limits.min} | Max: 🪙${limits.max}</div>`
           :`<div class="bet-locked">${lockedMsg}</div>`}
         </div>
       </div>
@@ -1695,7 +1700,7 @@ function renderMatches() {
     </div>`;
   }).join('');
 
-  if (!filtered.length) grid.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:40px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);">No matches available. Admin can fetch latest matches from the admin panel.</div>';
+  if (!filtered.length) grid.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:40px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);">🔴 No live matches right now. Check back soon — matches refresh every 20 seconds.</div>';
 }
 
 function filterMatches(f, el) {
@@ -2136,7 +2141,7 @@ async function getDefaultMatches() {
     const contentType=res.headers.get('content-type')||'';
     if (!res.ok||!contentType.includes('json')) return [];
     const data=await res.json();
-    const IST_OFFSET=5.5*60*60*1000, now=Date.now(), nowIST=now+IST_OFFSET, cutoffIST=nowIST+48*60*60*1000;
+    const IST_OFFSET=5.5*60*60*1000, now=Date.now();
     return data.map((raw,idx)=>{
       const matchStr=raw.match||raw.match_link_text||'';
       let team1='Team A', team2='Team B';
@@ -2149,26 +2154,35 @@ async function getDefaultMatches() {
       }
       let matchTimestamp=now+(idx+1)*3*60*60*1000;
       if (raw.date_ist&&raw.time_ist){try{const parsed=new Date(raw.date_ist.split('-').reverse().join('-')+' '+raw.time_ist);if(!isNaN(parsed))matchTimestamp=parsed.getTime();}catch(e){}}
-      const closeTime=matchTimestamp-(60*60*1000);
-      const status=tossResult?'completed':(now>=matchTimestamp)?'live':'upcoming';
-      const marketOpen=!tossResult&&status==='upcoming'&&now<closeTime;
+
+      // Use toss_close_time from JSON if present, otherwise fallback to 60 min before match
+      let closeTime = matchTimestamp - (60*60*1000);
+      if (raw.toss_close_time) {
+        try {
+          // toss_close_time is ISO 8601 UTC string "2026-04-21T10:30:00+00:00" or epoch ms
+          const ct = typeof raw.toss_close_time === 'number'
+            ? raw.toss_close_time  // epoch ms
+            : new Date(raw.toss_close_time).getTime(); // ISO string — new Date() handles UTC offset
+          if (!isNaN(ct)) closeTime = ct;
+        } catch(e) {}
+      }
+
+      // Scraped matches are always live (site only shows cards with active toss timers)
+      const status = tossResult ? 'completed' : 'live';
+      const marketOpen = !tossResult && now < closeTime;
       return {
         id:'m_'+idx+'_'+(raw.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12),
         team1,team2,flag1:'🏏',flag2:'🏏',
         league:raw.series||'Cricket',series:raw.series||'',
-        time:matchTimestamp,status,tossResult,toss:raw.toss||'',totalBets:0,marketOpen,
+        time:matchTimestamp,closeTime,status,tossResult,toss:raw.toss||'',totalBets:0,marketOpen,
         venue:raw.venue||raw.stadium||'',stadium:raw.stadium||'',city:raw.city||'',
         date:raw.date_ist||'',matchTime:raw.time_ist||''
       };
-    }).filter(m=>{
-      if(m.status==='live'||m.status==='completed') return true;
-      const matchIST=(m.time||0)+IST_OFFSET;
-      return matchIST<=cutoffIST&&matchIST>=(nowIST-6*60*60*1000);
-    });
+    }).filter(m => m.status === 'live');
   } catch(err) { console.error('Failed to load matches.json:',err); return []; }
 }
 
-// Auto-refresh from server every 60s
+// Auto-refresh from server every 20s for real-time toss and close-time enforcement
 setInterval(async()=>{
   const data=await getDefaultMatches();
   if (data&&data.length){
@@ -2178,10 +2192,14 @@ setInterval(async()=>{
       if(old){fresh.totalBets=old.totalBets||0;if(fresh.tossResult&&!old.tossResult)settleToss(fresh.id,fresh.tossResult);}
       return fresh;
     });
-    DB.set('matches',merged);
+    // Only persist live matches
+    DB.set('matches', merged.filter(m => m.status === 'live'));
+    if(document.getElementById('section-home').classList.contains('active')) renderMatches();
+  } else {
+    // Even if no data, re-render to update market-close state in real time
     if(document.getElementById('section-home').classList.contains('active')) renderMatches();
   }
-},60000);
+},20000);
 </script>
 </body>
 </html>
