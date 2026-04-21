@@ -281,7 +281,24 @@ def can_place_bet():
     except ValueError:
         return jsonify({"ok": False, "msg": "Invalid match time format"}), 400
 
+    # Use toss_close_time from JSON if present; fallback to 60 min before match
+    toss_close_raw = row.get("toss_close_time")
     close_time = match_time - timedelta(minutes=60)
+    if toss_close_raw:
+        try:
+            if isinstance(toss_close_raw, (int, float)):
+                # epoch ms
+                close_time = datetime.fromtimestamp(toss_close_raw / 1000, tz=IST)
+            elif isinstance(toss_close_raw, str):
+                # Try DD-MM-YYYY HH:MM or ISO formats
+                for fmt in ("%d-%m-%Y %H:%M", "%d-%m-%Y %I:%M %p", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"):
+                    try:
+                        close_time = datetime.strptime(toss_close_raw, fmt).replace(tzinfo=IST)
+                        break
+                    except ValueError:
+                        continue
+        except Exception:
+            pass  # fallback already set
     now        = now_ist()
 
     close_time_str = close_time.strftime("%d %b %Y %I:%M %p IST")
