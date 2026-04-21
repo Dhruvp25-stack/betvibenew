@@ -296,7 +296,7 @@ input[type=checkbox].toggle:checked::after{left:18px;}
           <span id="scraperStatusBadge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(122,139,168,0.15);color:#6a80a0;">Never Run</span>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Runs <strong style="color:var(--text);">Match_details.py</strong> → scrapes Cricbuzz → saves <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;">matches.json</code>. Only matches within next 48 hours IST are shown to users for betting.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Runs <strong style="color:var(--text);">Match_details.py</strong> → scrapes ironmantossbook.com → saves <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;">matches.json</code>. Only <strong style="color:var(--text);">live matches</strong> with active toss timers are shown to users. Each match includes a <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;">toss_close_time</code> computed from the site's countdown.</p>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <button class="btn btn-success" id="runScraperBtn" onclick="runScraper()">▶ Run Scraper Now</button>
         <button class="btn btn-outline btn-sm" onclick="checkScraperStatus()">↻ Check Status</button>
@@ -814,8 +814,21 @@ async function reloadMatchesFromJSON() {
       if (matchIST > cutoffIST && !tossResult) return null; // outside 48h window
 
       const old = existing.find(e => e.id === 'm_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12));
-      const status = tossResult ? 'completed' : matchTimestamp < now ? 'live' : 'upcoming';
-      const marketOpen = !tossResult && status === 'upcoming' && (matchTimestamp - now) > 30 * 60 * 1000;
+
+      // Use toss_close_time from JSON if present; fallback to matchTime - 60min
+      let closeTime = matchTimestamp - 60 * 60 * 1000;
+      if (m.toss_close_time) {
+        try {
+          const ct = typeof m.toss_close_time === 'number'
+            ? m.toss_close_time
+            : new Date(m.toss_close_time).getTime();
+          if (!isNaN(ct)) closeTime = ct;
+        } catch(e) {}
+      }
+
+      // Scraped cards are always live (site only shows active toss timers)
+      const status = tossResult ? 'completed' : 'live';
+      const marketOpen = !tossResult && now < closeTime;
 
       // If newly settled, auto-settle bets
       if (tossResult && old && !old.tossResult) {
@@ -826,7 +839,7 @@ async function reloadMatchesFromJSON() {
         id: 'm_' + idx + '_' + (m.match||'').replace(/[^a-z0-9]/gi,'').slice(0,12),
         team1, team2, flag1:'🏏', flag2:'🏏',
         league: m.series || 'Cricket', series: m.series || '',
-        time: matchTimestamp, status, tossResult, toss: m.toss || '',
+        time: matchTimestamp, closeTime, status, tossResult, toss: m.toss || '',
         totalBets: old ? (old.totalBets || 0) : 0,
         marketOpen,
         venue: m.venue || m.stadium || '', stadium: m.stadium || '',
@@ -953,9 +966,11 @@ function renderMatches() {
       ? new Date(matchTime).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
       : (m.date_ist ? `${m.date_ist} ${m.time_ist||''}` : '—');
 
-    const closeTime = matchTime - 60*60*1000;
+    const closeTime = typeof m.closeTime === 'number' && m.closeTime > 0
+      ? m.closeTime
+      : (matchTime > 0 ? matchTime - 60*60*1000 : 0);
     const now = Date.now();
-    const closeStr = matchTime
+    const closeStr = closeTime
       ? new Date(closeTime).toLocaleString('en-IN', { hour:'2-digit', minute:'2-digit' })
       : '—';
 
